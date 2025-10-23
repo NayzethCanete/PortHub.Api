@@ -1,3 +1,6 @@
+using System; 
+namespace PortHub.Api.Models;
+
 public class Flight
 {
     public int FlightId { get; set; }

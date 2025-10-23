@@ -1,107 +1,126 @@
-using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
-using PortHubApi.Interfaces;
-using PortHubApi.Models;
-using PortHubApi.Models.Dtos;
+using Microsoft.AspNetCore.Mvc;
+using PortHub.Api.Dtos;
+using PortHub.Api.Interfaces;
+using PortHub.Api.Models;
 
-namespace PortHubApi.Controllers
+namespace PortHub.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FlightController : ControllerBase
+    public class FlightsController : ControllerBase
     {
         private readonly IFlightService _flightService;
 
-        public FlightController(IFlightService flightService)
+        public FlightsController(IFlightService flightService)
         {
             _flightService = flightService;
         }
 
-        // GET /api/flight
+        // GET: api/flights
         [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public ActionResult<List<FlightDto>> GetAll()
+        public IActionResult GetAll()
         {
             var flights = _flightService.GetAll();
-            var dtoList = flights.Select(f => new FlightDto(
+
+            var response = flights.Select(f => new FlightResponseDto(
                 f.FlightId,
                 f.FlightCode,
-                f.AirlineId,
-                f.Origin,
-                f.Destination,
-                f.Status,
-                f.SlotId)).ToList();
+                DateTime.UtcNow,  // temporal hasta tener campos reales de horarios
+                DateTime.UtcNow.AddHours(2),
+                long.TryParse(f.AirlineId, out var id) ? id : 0
+            )).ToList();
 
-            return Ok(dtoList);
+            return Ok(response);
         }
 
-        // GET /api/flight/{id}
+        // GET: api/flights/{id}
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin")]
-        public ActionResult<FlightDto> GetById(int id)
+        public IActionResult GetById(int id)
         {
-            var f = _flightService.GetById(id);
-            if (f == null)
+            var flight = _flightService.GetById(id);
+
+            if (flight == null)
                 return NotFound($"No se encontró el vuelo con ID {id}");
 
-            var dto = new FlightDto(
-                f.FlightId,
-                f.FlightCode,
-                f.AirlineId,
-                f.Origin,
-                f.Destination,
-                f.Status,
-                f.SlotId);
+            var response = new FlightResponseDto(
+                flight.FlightId,
+                flight.FlightCode,
+                DateTime.UtcNow, 
+                DateTime.UtcNow.AddHours(2),
+                long.TryParse(flight.AirlineId, out var idNum) ? idNum : 0
+            );
 
-            return Ok(dto);
+            return Ok(response);
         }
 
-        // POST /api/flight
+        // POST: api/flights
         [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public ActionResult<FlightDto> Register([FromBody] RegisterFlightDto dto)
+        public IActionResult Create([FromBody] FlightRequestDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var flight = _flightService.RegisterFlight(dto);
+            var newFlight = new Flight
+            {
+                FlightCode = dto.FlightNumber,
+                AirlineId = dto.AirlineId.ToString(),
+                Origin = "Desconocido",
+                Destination = "Desconocido",
+                Status = "Programado",
+                SlotId = null
+            };
 
-            if (flight == null)
-                return BadRequest("No se pudo registrar el vuelo (puede que ya exista o falte información).");
+            var created = _flightService.Add(newFlight);
 
-            var response = new FlightDto(
-                flight.FlightId,
-                flight.FlightCode,
-                flight.AirlineId,
-                flight.Origin,
-                flight.Destination,
-                flight.Status,
-                flight.SlotId);
+            var response = new FlightResponseDto(
+                created.FlightId,
+                created.FlightCode,
+                dto.DepartureTime,
+                dto.ArrivalTime,
+                dto.AirlineId
+            );
 
-            return CreatedAtAction(nameof(GetById), new { id = flight.FlightId }, response);
+            return CreatedAtAction(nameof(GetById), new { id = created.FlightId }, response);
         }
 
-        // PUT /api/flight/{id}/status
-        [HttpPut("{id}/status")]
-        [Authorize(Roles = "Admin")]
-        public ActionResult UpdateStatus(int id, [FromBody] UpdateFlightStatusDto dto)
+        // PUT: api/flights/{id}
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] FlightRequestDto dto)
         {
-            var updated = _flightService.UpdateStatus(id, dto.Status);
-
-            if (!updated)
+            var existing = _flightService.GetById(id);
+            if (existing == null)
                 return NotFound($"No se encontró el vuelo con ID {id}");
 
-            return Ok($"Estado del vuelo actualizado a '{dto.Status}'");
+            existing.FlightCode = dto.FlightNumber;
+            existing.AirlineId = dto.AirlineId.ToString();
+            existing.Status = "Libre";
+            existing.Origin = "Pendiente";
+            existing.Destination = "Pendiente";
+
+            var updated = _flightService.Update(existing, id);
+
+            var response = new FlightResponseDto(
+                updated.FlightId,
+                updated.FlightCode,
+                dto.DepartureTime,
+                dto.ArrivalTime,
+                dto.AirlineId
+            );
+
+            return Ok(response);
         }
 
-        // DELETE /api/flight/{id}
+        // DELETE: api/flights/{id}
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
-        public ActionResult Delete(int id)
+        public IActionResult Delete(int id)
         {
-            var result = _flightService.Delete(id);
+            var deleted = _flightService.Delete(id);
 
-            if (!result)
+            if (!deleted)
                 return NotFound($"No se encontró el vuelo con ID {id}");
 
             return NoContent();

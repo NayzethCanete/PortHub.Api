@@ -1,14 +1,10 @@
-using System.ComponentModel.DataAnnotations;
 
-namespace PortHubApi.Models;
+using System; 
+namespace PortHub.Api.Models;
 public class Gate
 {
     public int GateId { get; set; }
-
-    [Required, MaxLength(20)]
     public string GateName { get; set; } 
-    
-    [MaxLength(50)]
     public string Location { get; set; }
 
 
