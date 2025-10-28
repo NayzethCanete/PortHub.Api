@@ -1,6 +1,6 @@
 using PortHub.Api.Models;
 
-namespace PortHubApi.Interface
+namespace PortHub.Api.Interface
 {
     public interface IGateService
     {

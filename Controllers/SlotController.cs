@@ -1,69 +1,79 @@
-
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
-using System.Linq;
-using PortHub.Api.Dtos;
 using PortHub.Api.Interface;
 using PortHub.Api.Models;
+using PortHub.Api.Dtos;
 
 namespace PortHub.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json")]
-    public class SlotsController : ControllerBase
+    public class SlotController : ControllerBase
     {
         private readonly ISlotService _slotService;
 
-        public SlotsController(ISlotService slotService)
+        public SlotController(ISlotService slotService)
         {
             _slotService = slotService;
         }
 
-        // GET: api/slots (LISTAR)
+        // Helper privado para convertir entidades a DTOs
+        private static ResponseSlotDto ToDto(Slot s) =>
+            new(s.Id, s.Date, s.Runway, s.Gate_id, s.Status, s.Flight_id);
+
+        // CRUD básico
         [HttpGet]
         public IActionResult GetAll()
         {
-            var slots = _slotService.GetAll();
-            var response = slots.Select(a => new ResponseSlotDto(
-                a.Id,
-                a.Date,
-                a.Runway,
-                a.Gate_id,
-                a.Status,
-                a.Flight_id
-            )).ToList();
-            return Ok(response);
+            var slots = _slotService.GetAll().Select(ToDto);
+            return Ok(slots);
         }
 
-        // GET: api/slots/{id} (LISTAR POR ID)
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
             var slot = _slotService.GetById(id);
             if (slot == null)
-                return NotFound($"No se encontró el Slot con el ID {id}");
-            var response = new ResponseSlotDto(
-                slot.Id,
-                slot.Date,
-                slot.Runway,
-                slot.Gate_id,
-                slot.Status,
-                slot.Flight_id
-            );
-            return Ok(response);
+                return NotFound(new { code = "NOT_FOUND", message = "Slot no encontrado" });
+
+            return Ok(ToDto(slot));
         }
 
-        // POST: api/slots (NUEVO SLOT)
         [HttpPost]
-        public IActionResult Create([FromBody] RequestSlotDto dto)
+        public IActionResult Add([FromBody] RequestSlotDto dto)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            var newSlot = new Slot
+                return BadRequest(new { code = "VALIDATION_ERROR", message = "Datos inválidos", details = ModelState });
+
+            try
             {
-                Id = dto.id,
+                var slot = new Slot
+                {
+                    Date = dto.Date,
+                    Runway = dto.Runway,
+                    Gate_id = dto.Gate_id,
+                    Status = dto.Status,
+                    Flight_id = dto.Flight_id
+                };
+
+                var created = _slotService.Add(slot);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ToDto(created));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { code = "DUPLICATE_SLOT", message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id:int}")]
+        public IActionResult Update(int id, [FromBody] RequestSlotDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { code = "VALIDATION_ERROR", message = "Datos inválidos", details = ModelState });
+
+            var slot = new Slot
+            {
+                Id = id,
                 Date = dto.Date,
                 Runway = dto.Runway,
                 Gate_id = dto.Gate_id,
@@ -71,131 +81,65 @@ namespace PortHub.Api.Controllers
                 Flight_id = dto.Flight_id
             };
 
-            var created = _slotService.Add(newSlot);
-
-            var response = new ResponseSlotDto(
-                created.Id,
-                created.Date,
-                created.Runway,
-                created.Gate_id,
-                created.Status,
-                created.Flight_id
-            );
-
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, response);
-        }
-
-        // PUT: api/slots/{id} (MODIFICAR SLOT)
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] RequestSlotDto dto)
-        {
-            var existing = _slotService.GetById(id);
-            if (existing == null)
-                return NotFound($"No se encontró el Slot con ID {id}");
-
-                existing.Id = dto.id;
-                existing.Date = dto.Date;
-                existing.Runway = dto.Runway;
-                existing.Gate_id = dto.Gate_id;
-                existing.Status = dto.Status;
-                existing.Flight_id = dto.Flight_id;
-
-            var updated = _slotService.Update(existing, id);
-
+            var updated = _slotService.Update(slot, id);
             if (updated == null)
-                return NotFound($"No se pudo actualizar el Slot con ID {id}");
+                return NotFound(new { code = "NOT_FOUND", message = "Slot no encontrado" });
 
-            var response = new ResponseSlotDto(
-                updated.Id,
-                updated.Date,
-                updated.Runway,
-                updated.Gate_id,
-                updated.Status,
-                updated.Flight_id
-            );
-
-            return Ok(response);
+            return Ok(ToDto(updated));
         }
 
-        // DELETE: api/slots/{id} (BORRAR SLOT)
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
             var deleted = _slotService.Delete(id);
-
             if (!deleted)
-                return NotFound($"No se encontró el Slot con ID {id}");
+                return NotFound(new { code = "NOT_FOUND", message = "Slot no encontrado" });
 
             return NoContent();
         }
 
-         // --- Endpoints para integración con la aerolínea ---
-
-        // RESERVA: la aerolínea solicita reservar un slot
-        [HttpPost("airline/reserve")]
-        public async Task<IActionResult> AirlineReserve([FromBody] AirlineReserveRequest req)
+        // Integración con Aerolínea
+        [HttpPost("reserve")]
+        public IActionResult Reserve([FromBody] RequestSlotDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(new ErrorResponse { Code = "VALIDATION_ERROR", Message = "Datos inválidos", Details = ModelState });
-
-            // Opcional: mapear preferred gate code a GateId
-            Guid? gateId = null;
-            if (!string.IsNullOrWhiteSpace(req.PreferredGateCode))
-            {
-                var gates = await _gateRepo.GetAllAsync();
-                var g = gates.FirstOrDefault(x => string.Equals(x.Code, req.PreferredGateCode, StringComparison.OrdinalIgnoreCase));
-                if (g != null) gateId = g.Id;
-            }
-
             var slot = new Slot
             {
-                ScheduledAt = req.ScheduledAt.ToUniversalTime(),
-                Runway = req.Runway,
-                GateId = gateId,
-                FlightNumber = req.FlightNumber,
-                AssignedToAirlineCode = req.AirlineCode,
-                State = SlotState.Reserved
+                Date = dto.Date,
+                Runway = dto.Runway,
+                Gate_id = dto.Gate_id,
+                Status = "Reservado",
+                Flight_id = dto.Flight_id
             };
 
-            try
-            {
-                var created = await _slotService.ReserveFromAirlineAsync(slot);
-                var res = new AirlineReserveResponse { SlotId = created.Id, Status = "reserved" };
-                return Ok(res);
-            }
-            catch (SlotConflictException ex)
-            {
-                return Conflict(new AirlineReserveResponse { SlotId = Guid.Empty, Status = "rejected", Reason = ex.Message });
-            }
+            var reserved = _slotService.ReserveSlot(slot);
+            return Ok(ToDto(reserved));
         }
 
-        // CONFIRMACIÓN: por parte de aerolínea (o sistema). Confirma slot existente
-        [HttpPost("airline/confirm/{slotId:guid}")]
-        public async Task<IActionResult> AirlineConfirm(Guid slotId)
+        [HttpPost("confirm/{id:int}")]
+        public IActionResult Confirm(int id)
         {
             try
             {
-                await _slotService.ConfirmSlotAsync(slotId);
-                return Ok(new { status = "confirmed" });
+                var confirmed = _slotService.ConfirmSlot(id);
+                return Ok(ToDto(confirmed));
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound(new ErrorResponse { Code = "NOT_FOUND", Message = "Slot no encontrado", Details = null });
+                return NotFound(new { code = "NOT_FOUND", message = ex.Message });
             }
         }
 
-        // CANCELAR: desde aerolínea -> libera el slot
-        [HttpPost("airline/cancel/{slotId:guid}")]
-        public async Task<IActionResult> AirlineCancel(Guid slotId)
+        [HttpPost("cancel/{id:int}")]
+        public IActionResult Cancel(int id)
         {
             try
             {
-                await _slotService.CancelSlotAsync(slotId);
-                return Ok(new { status = "cancelled" });
+                var canceled = _slotService.CancelSlot(id);
+                return Ok(ToDto(canceled));
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound(new ErrorResponse { Code = "NOT_FOUND", Message = "Slot no encontrado", Details = null });
+                return NotFound(new { code = "NOT_FOUND", message = ex.Message });
             }
         }
     }

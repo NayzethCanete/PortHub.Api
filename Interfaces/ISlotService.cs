@@ -4,13 +4,15 @@ namespace PortHub.Api.Interface
 {
     public interface ISlotService
     {
-        List<Slot> GetAll();
+        IEnumerable<Slot> GetAll();
         Slot? GetById(int id);
+        Slot Add(Slot slot);
         Slot? Update(Slot slot, int id);
         bool Delete(int id);
-        Slot Add(Slot slot);
-        Slot ReserveForAirline(Slot slot);
-        Slot ConfirmForAirline(int id);
-        Slot CancelForAirline(int id);
+        
+        // Métodos para integración con aerolínea
+        Slot ReserveSlot(Slot slot);
+        Slot ConfirmSlot(int id);
+        Slot CancelSlot(int id);
     }
 }
