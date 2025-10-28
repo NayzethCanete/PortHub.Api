@@ -1,4 +1,4 @@
-using PortHubApi.Models;
+using PortHub.Api.Models;
 
 namespace PortHubApi.Interface
 {

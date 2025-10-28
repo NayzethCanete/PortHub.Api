@@ -1,6 +1,6 @@
-using PortHubApi.Models;
+using PortHub.Api.Models;
 
-namespace PortHubApi.Interface
+namespace PortHub.Api.Interface
 {
     public interface ISlotService
     {
@@ -9,5 +9,8 @@ namespace PortHubApi.Interface
         Slot? Update(Slot slot, int id);
         bool Delete(int id);
         Slot Add(Slot slot);
+        Slot ReserveForAirline(Slot slot);
+        Slot ConfirmForAirline(int id);
+        Slot CancelForAirline(int id);
     }
 }

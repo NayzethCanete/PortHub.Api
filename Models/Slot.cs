@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace PortHubApi.Models;
+namespace PortHub.Api.Models;
 
 public class Slot
 {
