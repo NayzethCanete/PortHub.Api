@@ -47,5 +47,15 @@ namespace PortHub.Api.Services
             _tickets.Remove(ticket);
             return true;
         }
+
+        // Validar Ticket antes de embarque.
+        public bool ValidateTicket(int id)
+        {
+            var ticket = _tickets.FirstOrDefault(t => t.Id == id);
+            if (ticket == null) return false;
+
+            // Regla de validación simple
+            return ticket.Status.Equals("Válido", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

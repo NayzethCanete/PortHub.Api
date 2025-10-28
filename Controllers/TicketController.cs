@@ -86,5 +86,17 @@ namespace PortHub.Api.Controllers
 
             return NoContent();
         }
+
+        // Validación de ticket para embarque
+        [HttpGet("validate/{id:int}")]
+        public IActionResult ValidateTicket(int id)
+        {
+            var isValid = _ticketService.ValidateTicket(id);
+
+            if (!isValid)
+                return BadRequest(new { code = "INVALID_TICKET", message = "El ticket no es válido o no existe" });
+
+            return Ok(new { code = "VALID_TICKET", message = "El ticket es válido para embarque" });
+        }
     }
 }

@@ -9,5 +9,8 @@ namespace PortHub.Api.Interface
         Ticket? Update(Ticket ticket, int id);
         bool Delete(int id);
         Ticket Add(Ticket ticket);
+
+         // Nuevo método: verificar validez del ticket
+        bool ValidateTicket(int id);
     }
 }
