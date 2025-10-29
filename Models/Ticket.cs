@@ -1,4 +1,4 @@
-using System; 
+/*using System; 
 namespace PortHub.Api.Models;
 public class Ticket
 {
@@ -10,3 +10,4 @@ public class Ticket
     public string Seat { get; set; }
     public string Status { get; set; }
 }
+*/
