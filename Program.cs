@@ -8,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//Añade los controllers
+builder.Services.AddControllers();
+
+
 // DI - Añadir servicios de la capa de negocio
 builder.Services.AddSingleton<ISlotService, SlotService>();
 builder.Services.AddSingleton<IGateService, GateService>();
@@ -24,5 +28,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+//Mapea los controllers.
+app.MapControllers();
 
 app.Run();
