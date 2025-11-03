@@ -1,4 +1,5 @@
 using PortHub.Api.Models;
+using PortHub.Api.Dtos;
 
 namespace PortHub.Api.Interface
 {
@@ -10,7 +11,7 @@ namespace PortHub.Api.Interface
         bool Delete(int id);
         Ticket Add(Ticket ticket);
 
-         // Nuevo método: verificar validez del ticket
-        bool ValidateTicket(int id);
+        // Método: Verificar validez del ticket, con Dto.
+        TicketValidationResponse ValidateTicket(TicketValidationRequest request);
     }
 }

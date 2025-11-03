@@ -13,10 +13,10 @@ builder.Services.AddControllers();
 
 
 // DI - Añadir servicios de la capa de negocio
+builder.Services.AddHttpClient(); // Registrar HttpClient
 builder.Services.AddSingleton<ISlotService, SlotService>();
 builder.Services.AddSingleton<IGateService, GateService>();
 builder.Services.AddSingleton<ITicketService, TicketService>();
-
 // Construir la app
 var app = builder.Build();
 

@@ -35,6 +35,7 @@ C:/Users/Nayzeth/OneDrive/Documentos/Universidad/Programacion/CSharp/PortHub.Api
 C:/Users/Nayzeth/OneDrive/Documentos/Universidad/Programacion/CSharp/PortHub.Api/obj/Debug/net8.0/PortHub.Api.pdb
 C:/Users/Nayzeth/OneDrive/Documentos/Universidad/Programacion/CSharp/PortHub.Api/obj/Debug/net8.0/PortHub.Api.genruntimeconfig.cache
 C:/Users/Nayzeth/OneDrive/Documentos/Universidad/Programacion/CSharp/PortHub.Api/obj/Debug/net8.0/ref/PortHub.Api.dll
+/Users/kevinstivala/Desktop/Universidad/Progra2/PortHub.Api/bin/Debug/net8.0/ApiServerTest/db.json
 /Users/kevinstivala/Desktop/Universidad/Progra2/PortHub.Api/bin/Debug/net8.0/appsettings.Development.json
 /Users/kevinstivala/Desktop/Universidad/Progra2/PortHub.Api/bin/Debug/net8.0/appsettings.json
 /Users/kevinstivala/Desktop/Universidad/Progra2/PortHub.Api/bin/Debug/net8.0/PortHub.Api.staticwebassets.endpoints.json

@@ -1,12 +1,17 @@
 using PortHub.Api.Models;
 using PortHub.Api.Interface;
+using PortHub.Api.Dtos;
+
 
 namespace PortHub.Api.Services
 {
     public class TicketService : ITicketService
     {
+        private readonly HttpClient _httpClient;
         private static readonly List<Ticket> _tickets = new();
         private static int _nextId = 1;
+
+        public TicketService(HttpClient httpClient){_httpClient = httpClient;}
 
         public List<Ticket> GetAll()
         {
@@ -49,13 +54,18 @@ namespace PortHub.Api.Services
         }
 
         // Validar Ticket antes de embarque.
-        public bool ValidateTicket(int id)
+        public TicketValidationResponse ValidateTicket(TicketValidationRequest request)
         {
-            var ticket = _tickets.FirstOrDefault(t => t.Id == id);
-            if (ticket == null) return false;
+            // Enviar la solicitud a la API de la aerolínea
+        var response = _httpClient.PostAsJsonAsync("http://localhost:3000/validar-ticket", request).Result;
 
-            // Regla de validación simple
-            return ticket.Status.Equals("Válido", StringComparison.OrdinalIgnoreCase);
+        if (response.IsSuccessStatusCode)
+        {
+            var validationResponse = response.Content.ReadFromJsonAsync<TicketValidationResponse>().Result;
+            return validationResponse ?? new TicketValidationResponse(false, "Error al procesar la respuesta");
+        }
+
+            return new TicketValidationResponse(false, "Error al conectar con la API de aerolínea");
         }
     }
 }

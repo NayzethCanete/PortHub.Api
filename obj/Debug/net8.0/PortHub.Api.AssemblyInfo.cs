@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PortHub.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5795095d86098ee3e2da7296f1b4e165438fed90")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4311e17a526355654211a009abadc187ff504f53")]
 [assembly: System.Reflection.AssemblyProductAttribute("PortHub.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PortHub.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
