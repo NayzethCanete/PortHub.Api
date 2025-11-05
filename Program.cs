@@ -1,9 +1,3 @@
-
-using System;
-using System.Linq;
-using PortHub.Api.Interfaces;
-using PortHub.Api.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -16,9 +10,19 @@ builder.Services.AddScoped<IAirlineService, AirlineService>();
 builder.Services.AddScoped<IBoardingService, BoardingService>();
 builder.Services.AddScoped<IFlightService, FlightService>();
 
+//Añade los controllers
+builder.Services.AddControllers();
+
+
+// DI - Añadir servicios de la capa de negocio
+builder.Services.AddHttpClient(); // Registrar HttpClient
+builder.Services.AddSingleton<ISlotService, SlotService>();
+builder.Services.AddSingleton<IGateService, GateService>();
+builder.Services.AddSingleton<ITicketService, TicketService>();
+// Construir la app
 var app = builder.Build();
 
-
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -39,7 +43,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
+    var forecast =  Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
@@ -53,8 +57,3 @@ app.MapGet("/weatherforecast", () =>
 .WithOpenApi();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
