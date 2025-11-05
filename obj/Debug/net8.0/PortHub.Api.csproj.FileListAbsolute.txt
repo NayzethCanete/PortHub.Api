@@ -19,6 +19,7 @@ C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Azure.Core.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Azure.Identity.dll
+C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\DotNetEnv.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Humanizer.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
@@ -57,6 +58,7 @@ C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Microsoft.SqlServer.Server.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Microsoft.Win32.SystemEvents.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Mono.TextTemplating.dll
+C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Sprache.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Swashbuckle.AspNetCore.Swagger.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\Nayzeth\OneDrive\Documentos\Universidad\Programacion\CSharp\PortHub.Api\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll

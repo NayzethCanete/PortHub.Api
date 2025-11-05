@@ -3,61 +3,72 @@ using System.Collections.Generic;
 using System.Linq;
 using PortHub.Api.Interface;
 using PortHub.Api.Models;
+using Microsoft.EntityFrameworkCore;
+using PortHub.Api.Data;
 
-namespace PortHub.Api.Services
+namespace PortHub.Api.Services;
+
+public class BoardingService : IBoardingService
 {
-    public class BoardingService : IBoardingService
+    private readonly AppDbContext _context;
+
+    public BoardingService(AppDbContext context)
     {
-        //Implementacion en memoria para testeo.
-        private readonly List<Boarding> _boardings;
+        _context = context;
+    }
 
-        public BoardingService()
-        {
-            _boardings = new List<Boarding>
-            {
-                new Boarding { BoardingId = 1, TicketId = 1001, AccessTime = DateTime.UtcNow.AddMinutes(-30), GateId = 5, Validation = true },
-                new Boarding { BoardingId = 2, TicketId = 1002, AccessTime = DateTime.UtcNow.AddMinutes(-20), GateId = 3, Validation = true },
-                new Boarding { BoardingId = 3, TicketId = 1003, AccessTime = DateTime.UtcNow.AddMinutes(-10), GateId = 7, Validation = false }
-            };
-        }
+    public List<Boarding> GetAll()
+    {
+        return _context.Boardings
+            .Include(b => b.Slot)
+                .ThenInclude(s => s.Gate)
+            .ToList();
+    }
 
-        public List<Boarding> GetAll()
-        {
-            return _boardings.ToList();
-        }
+    public Boarding GetById(int id)
+    {
+        return _context.Boardings
+            .Include(b => b.Slot)
+                .ThenInclude(s => s.Gate)
+            .FirstOrDefault(b => b.BoardingId == id);
+    }
 
-        public Boarding? GetById(int id)
-        {
-            return _boardings.FirstOrDefault(b => b.BoardingId == id);
-        }
+    public List<Boarding> GetBySlotId(int slotId)
+    {
+        return _context.Boardings
+            .Where(b => b.SlotId == slotId)
+            .ToList();
+    }
 
-        public Boarding Add(Boarding boarding)
-        {
-            var nextId = _boardings.Any() ? _boardings.Max(b => b.BoardingId) + 1 : 1;
-            boarding.BoardingId = nextId;
-            _boardings.Add(boarding);
-            return boarding;
-        }
+    public Boarding Add(Boarding boarding)
+    {
+        _context.Boardings.Add(boarding);
+        _context.SaveChanges();
+        return GetById(boarding.BoardingId);
+    }
 
-        public Boarding Update(Boarding boarding, int id)
-        {
-            var existing = _boardings.FirstOrDefault(b => b.BoardingId == id);
-            if (existing == null) throw new KeyNotFoundException($"Boarding with id {id} not found.");
+    public Boarding Update(Boarding boarding, int id)
+    {
+        var existing = _context.Boardings.Find(id);
+        if (existing == null)
+            throw new KeyNotFoundException($"Boarding con id {id} no se encontro.");
 
-            existing.TicketId = boarding.TicketId;
-            existing.AccessTime = boarding.AccessTime;
-            existing.GateId = boarding.GateId;
-            existing.Validation = boarding.Validation;
+        existing.TicketId = boarding.TicketId;
+        existing.AccessTime = boarding.AccessTime;
+        existing.Validation = boarding.Validation;
+        existing.SlotId = boarding.SlotId;
 
-            return existing;
-        }
+        _context.SaveChanges();
+        return GetById(id);
+    }
 
-        public bool Delete(int id)
-        {
-            var existing = _boardings.FirstOrDefault(b => b.BoardingId == id);
-            if (existing == null) return false;
-            _boardings.Remove(existing);
-            return true;
-        }
+    public bool Delete(int id)
+    {
+        var existing = _context.Boardings.Find(id);
+        if (existing == null) return false;
+        
+        _context.Boardings.Remove(existing);
+        _context.SaveChanges();
+        return true;
     }
 }

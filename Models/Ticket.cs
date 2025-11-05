@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 using System.ComponentModel.DataAnnotations;
 
+=======
+/*using System; 
+>>>>>>> BD-setup
 namespace PortHub.Api.Models;
 
 public class Ticket
@@ -18,4 +22,9 @@ public class Ticket
 
     [Required, MaxLength(20)]
     public string Status { get; set; }
+<<<<<<< HEAD
 }
+=======
+}
+*/
+>>>>>>> BD-setup

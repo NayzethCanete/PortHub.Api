@@ -3,63 +3,76 @@ using System.Collections.Generic;
 using System.Linq;
 using PortHub.Api.Interface;
 using PortHub.Api.Models;
+using Microsoft.EntityFrameworkCore;
+using PortHub.Api.Data;
 
-namespace PortHub.Api.Services
+namespace PortHub.Api.Services;
+
+public class AirlineService : IAirlineService
 {
-    public class AirlineService : IAirlineService
+    private readonly AppDbContext _context;
+
+    public AirlineService(AppDbContext context)
     {
-        // Implementación en memoria (temporal) para prueba.Despues se reemplaza por dbcontext y bd. 
-        private readonly List<Airline> _airlines;
+        _context = context;
+    }
 
-        public AirlineService()
-        {
-            _airlines = new List<Airline>
-            {
-                new Airline { Id = 1, Name = "AeroSol", Code = "AS", Country = "Argentina", BaseAddress = "Buenos Aires" },
-                new Airline { Id = 2, Name = "Pacific Wings", Code = "PW", Country = "Chile", BaseAddress = "Santiago" },
-                new Airline { Id = 3, Name = "Andes Air", Code = "AA", Country = "Perú", BaseAddress = "Lima" },
-                new Airline { Id = 4, Name = "CaribeFly", Code = "CF", Country = "México", BaseAddress = "Ciudad de México" },
-                new Airline { Id = 5, Name = "LatAm Connect", Code = "LC", Country = "Colombia", BaseAddress = "Bogotá" }
-            };
-        }
+    public List<Airline> GetAll()
+    {
+        return _context.Airlines.Include(a => a.Slots).ToList();
+    }
 
-        public List<Airline> GetAll()
-        {
-            return _airlines.ToList();
-        }
+    public Airline GetById(int id)
+    {
+        return _context.Airlines
+            .Include(a => a.Slots)
+            .FirstOrDefault(a => a.Id == id);
+    }
 
-        public Airline? GetById(int id)
-        {
-            return _airlines.FirstOrDefault(a => a.Id == id);
-        }
+    public Airline GetByApiKey(string apiKey)
+    {
+        return _context.Airlines.FirstOrDefault(a => a.ApiKey == apiKey);
+    }
 
-        public Airline Add(Airline airline)
-        {
-            var nextId = _airlines.Any() ? _airlines.Max(a => a.Id) + 1 : 1;
-            airline.Id = nextId;
-            _airlines.Add(airline);
-            return airline;
-        }
+    public Airline Add(Airline airline)
+    {
+        // Generar API Key única
+        airline.ApiKey = GenerateApiKey(airline.Code);
+        
+        _context.Airlines.Add(airline);
+        _context.SaveChanges();
+        return airline;
+    }
 
-        public Airline Update(Airline airline, int id)
-        {
-            var existing = _airlines.FirstOrDefault(a => a.Id == id);
-            if (existing == null) throw new KeyNotFoundException($"Airline with id {id} not found.");
+    public Airline Update(Airline airline, int id)
+    {
+        var existing = _context.Airlines.Find(id);
+        if (existing == null)
+            throw new KeyNotFoundException($"Airline con id {id} no se encontro.");
 
-            existing.Name = airline.Name;
-            existing.Code = airline.Code;
-            existing.Country = airline.Country;
-            existing.BaseAddress = airline.BaseAddress;
+        existing.Name = airline.Name;
+        existing.Code = airline.Code;
+        existing.Country = airline.Country;
+        existing.BaseAddress = airline.BaseAddress;
+        existing.ApiUrl = airline.ApiUrl;
 
-            return existing;
-        }
+        _context.SaveChanges();
+        return existing;
+    }
 
-        public bool Delete(int id)
-        {
-            var existing = _airlines.FirstOrDefault(a => a.Id == id);
-            if (existing == null) return false;
-            _airlines.Remove(existing);
-            return true;
-        }
+    public bool Delete(int id)
+    {
+        var existing = _context.Airlines.Find(id);
+        if (existing == null) return false;
+        
+        _context.Airlines.Remove(existing);
+        _context.SaveChanges();
+        return true;
+    }
+
+    private string GenerateApiKey(string code)
+    {
+        var guid = Guid.NewGuid().ToString("N").ToUpper();
+        return $"{code}_KEY_{guid.Substring(0, 24)}";
     }
 }
