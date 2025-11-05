@@ -14,16 +14,16 @@ namespace PortHub.Api.Models
         
         public string Runway { get; set; }
         public int? GateId { get; set; }
-        public int? FlightId { get; set; }
+        public string? FlightCode { get; set; }
         
         [Required] 
         public string Status { get; set; } = string.Empty;
 
         // Relaciones (Combinado)
-        [ForeignKey("Flight_id")]
-        public Flight? Flight { get; set; }
+    //    [ForeignKey("Flight_id")]
+//        public Flight? Flight { get; set; }
         
-        [ForeignKey("Gate_id")]
+     //   [ForeignKey("Gate_id")]
         public Gate? Gate { get; set; }
         
         public ICollection<Boarding> Boardings { get; set; } = new List<Boarding>();

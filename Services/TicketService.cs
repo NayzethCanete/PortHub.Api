@@ -37,7 +37,7 @@ namespace PortHub.Api.Services
             if (existing == null)
                 return null;
 
-            existing.FlightId = ticket.FlightId;
+            existing.FlightCode = ticket.FlightCode;
             existing.PassengerName = ticket.PassengerName;
             existing.Seat = ticket.Seat;
             existing.Status = ticket.Status;
@@ -57,7 +57,8 @@ namespace PortHub.Api.Services
         public TicketValidationResponse ValidateTicket(TicketValidationRequest request)
         {
             // Enviar la solicitud a la API de la aerolínea
-        var response = _httpClient.PostAsJsonAsync("http://localhost:5241/api/airline/validate-ticket", request).Result;
+            var response = _httpClient.PostAsJsonAsync("http://localhost:5241/api/airline/validate-ticket", request).Result;
+        
         //API de Prueba.
         if (response.IsSuccessStatusCode)
         {

@@ -27,7 +27,7 @@ namespace PortHub.Api.Controllers
                 s.Runway,
                 s.GateId ?? 0,   
                 s.Status,
-                s.FlightId ?? 0 
+                s.FlightCode
             );
 
   //      [Authorize]
@@ -65,7 +65,7 @@ namespace PortHub.Api.Controllers
                     Runway = dto.Runway,
                     GateId = dto.Gate_id,    
                     Status = dto.Status,
-                    FlightId = dto.Flight_id   
+                    FlightCode = dto.FlightCode  
                 };
 
                 var created = _slotService.Add(slot);
@@ -91,7 +91,7 @@ namespace PortHub.Api.Controllers
                 Runway = dto.Runway,
                 GateId = dto.Gate_id,     
                 Status = dto.Status,
-                FlightId = dto.Flight_id  
+                FlightCode = dto.FlightCode 
             };
 
             var updated = _slotService.Update(slot, id);
@@ -123,7 +123,7 @@ namespace PortHub.Api.Controllers
                 Runway = dto.Runway,
                 GateId = dto.Gate_id,     
                 Status = "Reservado",     
-                FlightId = dto.Flight_id  
+                FlightCode = dto.FlightCode  
             };
 
             var reserved = _slotService.ReserveSlot(slot);

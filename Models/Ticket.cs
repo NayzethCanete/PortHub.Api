@@ -9,9 +9,10 @@ namespace PortHub.Api.Models
         public int Id { get; set; }
         
         [Required]
-        public int FlightId { get; set; }
+        public string FlightCode { get; set; }
         
-        public string? PassengerName { get; set; }         public string? Seat { get; set; }
+        public string? PassengerName { get; set; }        
+        public string? Seat { get; set; }
         
         [Required]
         public string Status { get; set; }

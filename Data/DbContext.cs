@@ -8,7 +8,8 @@ namespace PortHub.Api.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Airline> Airlines { get; set; }
-        public DbSet<Flight> Flights { get; set; }
+        
+        //public DbSet<Flight> Flights { get; set; }
         public DbSet<Gate> Gates { get; set; }
         public DbSet<Slot> Slots { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
@@ -18,13 +19,11 @@ namespace PortHub.Api.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Airline -> Flight
+            /* Airline -> Flight
             modelBuilder.Entity<Airline>()
                 .HasMany(a => a.Flights)
                 .WithOne(f => f.Airline)
-                .HasForeignKey(f => f.AirlineId);
 
-        /*
             // Flight -> Ticket
             modelBuilder.Entity<Flight>()
                 .HasMany(f => f.Tickets)
