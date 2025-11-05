@@ -1,9 +1,5 @@
 using System; 
 namespace PortHub.Api.Models;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-
-namespace PortHub.Api.Models;
 public class Airline
 {
     public int Id { get; set; }

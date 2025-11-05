@@ -1,12 +1,21 @@
-using System; 
+using System.ComponentModel.DataAnnotations;
+
 namespace PortHub.Api.Models;
+
 public class Ticket
 {
-    public int Id { get; set; }
-    public string TicketNumber { get; set; }
-    public int FlightId { get; set; }
-    public Flight Flight { get; set; }
-    public string PassengerName { get; set; }
+    [Required]
+    public int? Id { get; set; }
+
+    [Required]
+    public int Flight_id { get; set; }
+
+    [Required, MaxLength(50)]
+    public string Passenger_name { get; set; }
+
+    [Required, MaxLength(10)]
     public string Seat { get; set; }
+
+    [Required, MaxLength(20)]
     public string Status { get; set; }
 }

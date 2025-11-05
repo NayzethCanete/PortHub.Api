@@ -1,16 +1,24 @@
-using System; 
-namespace PortHub.Api.Models;
+using System.ComponentModel.DataAnnotations;
 
-public enum SlotStatus { RESERVED, CONFIRMED, RELEASED }
+namespace PortHub.Api.Models;
 
 public class Slot
 {
-    public int Id { get; set; }
-    public DateTime ScheduledTime { get; set; }
-    public int Runway { get; set; } // pista
-    public int GateId { get; set; }
-    public Gate Gate { get; set; }
-    public SlotStatus Status { get; set; } //Libre, reservado, confirmado
-    public int FlightId { get; set; }
-    public Flight Flight { get; set; }
+    [Required]
+    public int? Id { get; set; }
+
+    [Required]
+    public DateTime Date { get; set; }
+
+    [Required]
+    public int Runway { get; set; }
+
+    [Required]
+    public int Gate_id { get; set; }
+
+    [Required, MaxLength(20)]
+    public string Status { get; set; }
+
+    [Required]
+    public int Flight_id { get; set; }
 }

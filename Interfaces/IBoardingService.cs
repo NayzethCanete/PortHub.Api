@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using PortHub.Api.Models;
 
-namespace PortHub.Api.Interfaces
+namespace PortHub.Api.Interface
 {
     public interface IBoardingService
     {

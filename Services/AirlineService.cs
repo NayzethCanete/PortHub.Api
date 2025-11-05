@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PortHub.Api.Interfaces;
+using PortHub.Api.Interface;
 using PortHub.Api.Models;
 
 namespace PortHub.Api.Services

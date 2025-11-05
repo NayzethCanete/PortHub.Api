@@ -1,7 +1,7 @@
 using System; 
 using PortHub.Api.Models;
 
-namespace PortHub.Api.Interfaces
+namespace PortHub.Api.Interface
 {
     public interface IFlightService
     {

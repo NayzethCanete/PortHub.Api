@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Dtos;
-using PortHub.Api.Interfaces;
+using PortHub.Api.Interface;
 using PortHub.Api.Models;
 
 
