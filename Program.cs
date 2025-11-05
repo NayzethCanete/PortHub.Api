@@ -23,7 +23,7 @@ if (string.IsNullOrEmpty(connectionString))
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(connectionString);  // ⚠️ CAMBIO: UseSqlServer
+    options.UseSqlServer(connectionString); 
     
     if (builder.Environment.IsDevelopment())
     {
@@ -38,14 +38,12 @@ builder.Services.AddScoped<IAirlineService, AirlineService>();
 //builder.Services.AddScoped<IGateService, GateService>();
 builder.Services.AddScoped<IBoardingService, BoardingService>();
 
-// ===== HTTP CLIENT FACTORY =====
 builder.Services.AddHttpClient("AirlineApiClient", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.Add("User-Agent", "PortHub-Airport-System");
 });
 
-// ===== CONTROLLERS =====
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -55,7 +53,6 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 
-// ===== SWAGGER =====
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
@@ -66,7 +63,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ===== CORS =====
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -79,7 +76,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ===== MIGRACIÓN AUTOMÁTICA EN DESARROLLO =====
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
@@ -88,16 +84,15 @@ if (app.Environment.IsDevelopment())
         try
         {
             dbContext.Database.Migrate();
-            Console.WriteLine("✅ Base de datos migrada exitosamente");
+            Console.WriteLine(" Base de datos migrada exitosamente");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error al migrar la base de datos: {ex.Message}");
+            Console.WriteLine($"Error al migrar la base de datos: {ex.Message}");
         }
     }
 }
 
-// ===== MIDDLEWARE =====
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -125,7 +120,7 @@ app.MapGet("/health", () => Results.Ok(new
     database = "SQL Server"
 }));
 
-Console.WriteLine("🚀 PortHub API iniciada correctamente");
-Console.WriteLine($"📍 Swagger UI: http://localhost:5000");
+Console.WriteLine("PortHub API iniciada correctamente");
+Console.WriteLine($"Swagger UI: http://localhost:5000");
 
 app.Run();
