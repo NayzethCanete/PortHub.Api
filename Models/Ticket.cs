@@ -17,9 +17,7 @@ namespace PortHub.Api.Models
         public string Status { get; set; }
 
         // Relaciones
-        [ForeignKey("FlightId")]
-        public virtual Flight? Flight { get; set; }
-        
+
         public virtual Boarding? Boarding { get; set; }
     }
 }

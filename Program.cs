@@ -37,7 +37,8 @@ builder.Services.AddScoped<IAirlineService, AirlineService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 builder.Services.AddScoped<IGateService, GateService>();
 builder.Services.AddScoped<IBoardingService, BoardingService>();
-builder.Services.AddScoped<IFlightService, FlightService>();
+//builder.Services.AddScoped<IFlightService, FlightService>();
+// La logica de vuelo es para Aerolineas.
 builder.Services.AddScoped<ITicketService, TicketService>();
 
 

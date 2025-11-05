@@ -24,6 +24,7 @@ namespace PortHub.Api.Data
                 .WithOne(f => f.Airline)
                 .HasForeignKey(f => f.AirlineId);
 
+        /*
             // Flight -> Ticket
             modelBuilder.Entity<Flight>()
                 .HasMany(f => f.Tickets)
@@ -34,7 +35,8 @@ namespace PortHub.Api.Data
             modelBuilder.Entity<Flight>()
                 .HasOne(f => f.Slot)
                 .WithOne(s => s.Flight)
-                .HasForeignKey<Slot>(s => s.FlightId);
+                .HasForeignKey<Slot>(s => s.FlightId); 
+                */
 
             // Gate -> Slot (One-to-Many)
             modelBuilder.Entity<Gate>()
