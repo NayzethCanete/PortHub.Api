@@ -88,7 +88,7 @@ namespace PortHub.Api.Controllers
         }
 
         // Validación de ticket a Aerolíneas, para embarque.
-        [HttpGet("validate")]
+        [HttpPost("validate")]
         public IActionResult ValidateTicket([FromBody] TicketValidationRequest request)
         {
             var result = _ticketService.ValidateTicket(request);

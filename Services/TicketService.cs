@@ -57,8 +57,8 @@ namespace PortHub.Api.Services
         public TicketValidationResponse ValidateTicket(TicketValidationRequest request)
         {
             // Enviar la solicitud a la API de la aerolínea
-        var response = _httpClient.PostAsJsonAsync("http://localhost:3000/validar-ticket", request).Result;
-
+        var response = _httpClient.PostAsJsonAsync("http://localhost:5241/api/airline/validate-ticket", request).Result;
+        //API de Prueba.
         if (response.IsSuccessStatusCode)
         {
             var validationResponse = response.Content.ReadFromJsonAsync<TicketValidationResponse>().Result;

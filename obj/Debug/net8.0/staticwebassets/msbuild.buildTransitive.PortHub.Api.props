@@ -1,3 +1,3 @@
 ﻿<Project>
-  <Import Project="../buildMultiTargeting/PortHub.Api.props" />
+  <Import Project="..\buildMultiTargeting\PortHub.Api.props" />
 </Project>
