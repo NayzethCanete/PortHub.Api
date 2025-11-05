@@ -1,4 +1,6 @@
-using System.ComponentModel.DataAnnotations;
+
+
+/*using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PortHub.Api.Models
@@ -32,4 +34,4 @@ namespace PortHub.Api.Models
         
         public virtual Slot? Slot { get; set; }
     }
-}
+}*/

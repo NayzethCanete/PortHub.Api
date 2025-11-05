@@ -4,9 +4,9 @@ namespace PortHub.Api.Dtos;
 public record RequestSlotDto(
     DateTime Date,
     string Runway,
-    int Gate_id,
+    int? Gate_id,
     string Status,
-    int Flight_id
+    string FlightCode
 );
 
 // Datos devueltos al cliente
@@ -16,5 +16,5 @@ public record ResponseSlotDto(
     string? Runway,
     int GateId,
     string Status,
-    int FlightId
+    string FlightCode
 );

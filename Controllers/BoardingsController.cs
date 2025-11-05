@@ -49,7 +49,7 @@ public class BoardingController : ControllerBase
         var response = new BoardingResponseDto(
             boarding.BoardingId,
             boarding.TicketId.ToString(),
-            boarding.Slot.GateId ?? 0,
+            boarding.Slot?.GateId ?? 0,
             boarding.AccessTime,
             boarding.Validation
         );
@@ -70,7 +70,7 @@ public class BoardingController : ControllerBase
         var newBoarding = new Boarding
         {
             TicketId = ticketId,
-            SlotId = dto.FlightId, 
+            SlotId = dto.SlotId,
             AccessTime = DateTime.UtcNow,
             Validation = false
         };

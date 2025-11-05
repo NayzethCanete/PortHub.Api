@@ -56,7 +56,7 @@ namespace PortHub.Api.Services
             existing.ScheduleTime = slot.ScheduleTime; // CORREGIDO (sin 'd')
             existing.Runway = slot.Runway;
             existing.GateId = slot.GateId;
-            existing.FlightId = slot.FlightId;
+            existing.FlightCode = slot.FlightCode;
             existing.Status = slot.Status ?? existing.Status;
 
             _context.SaveChanges(); // CORREGIDO: Añadir guardado

@@ -19,13 +19,13 @@ public class AirlineService : IAirlineService
 
     public List<Airline> GetAll()
     {
-        return _context.Airlines.Include(a => a.Flights).ToList();
+        return _context.Airlines.ToList();
     }
 
     public Airline GetById(int id)
     {
         return _context.Airlines
-            .Include(a => a.Flights)
+           // .Include(a => a.Flights)
             .FirstOrDefault(a => a.Id == id);
     }
 

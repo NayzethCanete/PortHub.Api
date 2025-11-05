@@ -1,9 +1,10 @@
 namespace PortHub.Api.Dtos;
 
 public record BoardingRequestDto(
-    string TicketNumber, 
-    long GateId, 
-    int FlightId
+    string TicketNumber,
+    int SlotId,
+    long GateId,
+    int FlightCode
 );
 
 public record BoardingResponseDto(

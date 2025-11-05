@@ -15,7 +15,6 @@ namespace PortHub.Api.Models
         public DateTime AccessTime { get; set; }
         public bool Validation { get; set; }
 
-       
         [ForeignKey("TicketId")]
         public virtual Ticket? Ticket { get; set; }
         

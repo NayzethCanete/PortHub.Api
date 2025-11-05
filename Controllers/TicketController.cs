@@ -18,7 +18,7 @@ namespace PortHub.Api.Controllers
         }
 
         private static ResponseTicketDto ToDto(Ticket t) =>
-            new(t.Id, t.FlightId, t.PassengerName, t.Seat, t.Status); 
+            new(t.Id, t.FlightCode, t.PassengerName, t.Seat, t.Status); 
 
         [HttpGet]
         public IActionResult GetAll()
@@ -45,7 +45,7 @@ namespace PortHub.Api.Controllers
 
             var ticket = new Ticket
             {
-                FlightId = dto.FlightId,
+                FlightCode= dto.FlightCode,
                 PassengerName = dto.PassengerName, 
                 Seat = dto.Seat,
                 Status = dto.Status ?? "Emitido"
@@ -64,7 +64,7 @@ namespace PortHub.Api.Controllers
             var ticket = new Ticket
             {
                 Id = id,
-                FlightId = dto.FlightId, 
+                FlightCode = dto.FlightCode, 
                 PassengerName = dto.PassengerName, 
                 Seat = dto.Seat,
                 Status = dto.Status ?? "Emitido"
