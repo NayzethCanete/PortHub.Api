@@ -1,49 +1,46 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
+using PortHub.Api.Data;  
+using Microsoft.EntityFrameworkCore;
 
 namespace PortHub.Api.Services
 {
     public class FlightService : IFlightService
     {
-        private readonly List<Flight> _flights;
+        private readonly AppDbContext _context;
 
-        public FlightService()
+        public FlightService(AppDbContext context)
         {
-            _flights = new List<Flight>
-            {
-                new Flight { FlightId = 1, FlightCode = "FL100", AirlineId = "1", Origin = "Buenos Aires", Destination = "Santiago", Status = "En horario", SlotId = "S01" },
-                new Flight { FlightId = 2, FlightCode = "FL200", AirlineId = "2", Origin = "Lima", Destination = "Bogotá", Status = "Demorado", SlotId = "S02" },
-                new Flight { FlightId = 3, FlightCode = "FL300", AirlineId = "3", Origin = "Montevideo", Destination = "Asunción", Status = "Cancelado", SlotId = "S03" }
-            };
+            _context = context;
         }
 
         public List<Flight> GetAll()
         {
-            return _flights.ToList();
+            return _context.Flights.Include(f => f.Airline).ToList();
         }
 
         public Flight? GetById(int id)
         {
-            return _flights.FirstOrDefault(f => f.FlightId == id);
+            return _context.Flights.Include(f => f.Airline)
+                .FirstOrDefault(f => f.FlightId == id);
         }
 
         public Flight Add(Flight flight)
         {
-            var nextId = _flights.Any() ? _flights.Max(f => f.FlightId) + 1 : 1;
-            flight.FlightId = nextId;
-            _flights.Add(flight);
-            return flight;
+            _context.Flights.Add(flight);
+             _context.SaveChanges();
+             return flight;
         }
 
         public Flight Update(Flight flight, int id)
         {
-            var existing = _flights.FirstOrDefault(f => f.FlightId == id);
+            var existing = _context.Flights.Find(id);
             if (existing == null)
-                throw new KeyNotFoundException($"Flight con ID {id} no encontrado.");
-
+                throw new KeyNotFoundException($"Flight con id {id} no se encontro.");
+            
             existing.FlightCode = flight.FlightCode;
             existing.AirlineId = flight.AirlineId;
             existing.Origin = flight.Origin;
@@ -51,14 +48,17 @@ namespace PortHub.Api.Services
             existing.Status = flight.Status;
             existing.SlotId = flight.SlotId;
 
-            return existing;
+             _context.SaveChanges();
+             return existing;
         }
 
         public bool Delete(int id)
         {
-            var existing = _flights.FirstOrDefault(f => f.FlightId == id);
+            var existing = _context.Flights.Find(id);
             if (existing == null) return false;
-            _flights.Remove(existing);
+            
+            _context.Flights.Remove(existing);
+            _context.SaveChanges();
             return true;
         }
     }

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using PortHub.Api.Data;
@@ -19,13 +19,13 @@ public class AirlineService : IAirlineService
 
     public List<Airline> GetAll()
     {
-        return _context.Airlines.Include(a => a.Slots).ToList();
+        return _context.Airlines.Include(a => a.Flights).ToList();
     }
 
     public Airline GetById(int id)
     {
         return _context.Airlines
-            .Include(a => a.Slots)
+            .Include(a => a.Flights)
             .FirstOrDefault(a => a.Id == id);
     }
 

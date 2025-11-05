@@ -1,17 +1,14 @@
 using PortHub.Api.Models;
 
-<<<<<<< HEAD
-namespace PortHub.Api.Interface
-=======
-namespace PortHub.Api.Interfaces;
-
-public interface IBoardingService
->>>>>>> BD-setup
+namespace PortHub.Api.Interfaces 
 {
-    List<Boarding> GetAll();
-    Boarding GetById(int id);
-    List<Boarding> GetBySlotId(int slotId);
-    Boarding Add(Boarding boarding);
-    Boarding Update(Boarding boarding, int id);
-    bool Delete(int id);
+    public interface IBoardingService
+    {
+        List<Boarding> GetAll();
+        Boarding GetById(int id);
+        List<Boarding> GetBySlotId(int slotId);
+        Boarding Add(Boarding boarding);
+        Boarding Update(Boarding boarding, int id);
+        bool Delete(int id);
+    }
 }

@@ -482,3 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Ignorar carpetas de compilación de .NET
+[Oo]bj/
+[Bb]in/

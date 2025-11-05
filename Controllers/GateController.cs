@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Models;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Dtos;
 
 namespace PortHub.Api.Controllers

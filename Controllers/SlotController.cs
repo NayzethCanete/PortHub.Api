@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 using PortHub.Api.Dtos;
+//using PortHub.Api.Security; // <-- Importante: Para la API Key
+//using Microsoft.AspNetCore.Authorization; // <-- Importante: Para JWT
 
 namespace PortHub.Api.Controllers
 {
@@ -17,11 +19,18 @@ namespace PortHub.Api.Controllers
             _slotService = slotService;
         }
 
-        // Helper privado para convertir entidades a DTOs
+        
         private static ResponseSlotDto ToDto(Slot s) =>
-            new(s.Id, s.Date, s.Runway, s.Gate_id, s.Status, s.Flight_id);
+            new(
+                s.Id,
+                s.ScheduleTime, 
+                s.Runway,
+                s.GateId ?? 0,   
+                s.Status,
+                s.FlightId ?? 0 
+            );
 
-        // CRUD básico
+  //      [Authorize]
         [HttpGet]
         public IActionResult GetAll()
         {
@@ -29,6 +38,7 @@ namespace PortHub.Api.Controllers
             return Ok(slots);
         }
 
+    //    [Authorize] 
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
@@ -39,6 +49,7 @@ namespace PortHub.Api.Controllers
             return Ok(ToDto(slot));
         }
 
+      //  [Authorize] 
         [HttpPost]
         public IActionResult Add([FromBody] RequestSlotDto dto)
         {
@@ -47,13 +58,14 @@ namespace PortHub.Api.Controllers
 
             try
             {
+                
                 var slot = new Slot
                 {
-                    Date = dto.Date,
+                    ScheduleTime = dto.Date,
                     Runway = dto.Runway,
-                    Gate_id = dto.Gate_id,
+                    GateId = dto.Gate_id,    
                     Status = dto.Status,
-                    Flight_id = dto.Flight_id
+                    FlightId = dto.Flight_id   
                 };
 
                 var created = _slotService.Add(slot);
@@ -65,6 +77,7 @@ namespace PortHub.Api.Controllers
             }
         }
 
+       // [Authorize] 
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, [FromBody] RequestSlotDto dto)
         {
@@ -74,11 +87,11 @@ namespace PortHub.Api.Controllers
             var slot = new Slot
             {
                 Id = id,
-                Date = dto.Date,
+                ScheduleTime = dto.Date, 
                 Runway = dto.Runway,
-                Gate_id = dto.Gate_id,
+                GateId = dto.Gate_id,     
                 Status = dto.Status,
-                Flight_id = dto.Flight_id
+                FlightId = dto.Flight_id  
             };
 
             var updated = _slotService.Update(slot, id);
@@ -88,6 +101,7 @@ namespace PortHub.Api.Controllers
             return Ok(ToDto(updated));
         }
 
+        //[Authorize] 
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
@@ -98,17 +112,18 @@ namespace PortHub.Api.Controllers
             return NoContent();
         }
 
-        // Integración con Aerolínea
+
         [HttpPost("reserve")]
+        //[ApiKeyAuthorize] 
         public IActionResult Reserve([FromBody] RequestSlotDto dto)
         {
             var slot = new Slot
             {
-                Date = dto.Date,
+                ScheduleTime = dto.Date, 
                 Runway = dto.Runway,
-                Gate_id = dto.Gate_id,
-                Status = "Reservado",
-                Flight_id = dto.Flight_id
+                GateId = dto.Gate_id,     
+                Status = "Reservado",     
+                FlightId = dto.Flight_id  
             };
 
             var reserved = _slotService.ReserveSlot(slot);
@@ -116,6 +131,7 @@ namespace PortHub.Api.Controllers
         }
 
         [HttpPost("confirm/{id:int}")]
+       // [ApiKeyAuthorize] 
         public IActionResult Confirm(int id)
         {
             try
@@ -130,6 +146,7 @@ namespace PortHub.Api.Controllers
         }
 
         [HttpPost("cancel/{id:int}")]
+        //[ApiKeyAuthorize] 
         public IActionResult Cancel(int id)
         {
             try

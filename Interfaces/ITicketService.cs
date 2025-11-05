@@ -1,7 +1,7 @@
 using PortHub.Api.Models;
 using PortHub.Api.Dtos;
 
-namespace PortHub.Api.Interface
+namespace PortHub.Api.Interfaces
 {
     public interface ITicketService
     {

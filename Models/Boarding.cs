@@ -1,18 +1,25 @@
-namespace PortHub.Api.Models;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public class Boarding
+namespace PortHub.Api.Models
 {
-    public int BoardingId { get; set; }  
-    public int TicketId { get; set; }
-    public DateTime AccessTime { get; set; }
-<<<<<<< HEAD
-    public int GateId { get; set; }
-    public bool Validation { get; set; }
-=======
-    public bool Validation { get; set; }  
-    
-    // Relación con Slot (agregada)
-    public int SlotId { get; set; }
-    public Slot Slot { get; set; }
->>>>>>> BD-setup
+    public class Boarding
+    {
+        [Key]
+        public int BoardingId { get; set; }
+        
+        [Required]
+        public int TicketId { get; set; }
+        
+        public int SlotId { get; set; }
+        public DateTime AccessTime { get; set; }
+        public bool Validation { get; set; }
+
+       
+        [ForeignKey("TicketId")]
+        public virtual Ticket? Ticket { get; set; }
+        
+        [ForeignKey("SlotId")]
+        public virtual Slot? Slot { get; set; }
+    }
 }

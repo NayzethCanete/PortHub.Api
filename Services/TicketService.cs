@@ -1,5 +1,5 @@
 using PortHub.Api.Models;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Dtos;
 
 
@@ -37,8 +37,8 @@ namespace PortHub.Api.Services
             if (existing == null)
                 return null;
 
-            existing.Flight_id = ticket.Flight_id;
-            existing.Passenger_name = ticket.Passenger_name;
+            existing.FlightId = ticket.FlightId;
+            existing.PassengerName = ticket.PassengerName;
             existing.Seat = ticket.Seat;
             existing.Status = ticket.Status;
             return existing;

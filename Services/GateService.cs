@@ -1,5 +1,5 @@
 using PortHub.Api.Models;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 
 namespace PortHub.Api.Services
 {

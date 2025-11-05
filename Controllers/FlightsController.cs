@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Dtos;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 
 namespace PortHub.Api.Controllers
@@ -31,7 +31,7 @@ namespace PortHub.Api.Controllers
                 f.FlightCode,
                 DateTime.UtcNow,  // temporal hasta tener campos reales de horarios
                 DateTime.UtcNow.AddHours(2),
-                long.TryParse(f.AirlineId, out var id) ? id : 0
+                f.AirlineId
             )).ToList();
 
             return Ok(response);
@@ -51,8 +51,7 @@ namespace PortHub.Api.Controllers
                 flight.FlightCode,
                 DateTime.UtcNow, 
                 DateTime.UtcNow.AddHours(2),
-                long.TryParse(flight.AirlineId, out var idNum) ? idNum : 0
-            );
+                flight.AirlineId            );
 
             return Ok(response);
         }
@@ -67,7 +66,7 @@ namespace PortHub.Api.Controllers
             var newFlight = new Flight
             {
                 FlightCode = dto.FlightNumber,
-                AirlineId = dto.AirlineId.ToString(),
+                AirlineId = (int)dto.AirlineId,
                 Origin = "Desconocido",
                 Destination = "Desconocido",
                 Status = "Programado",
@@ -96,7 +95,7 @@ namespace PortHub.Api.Controllers
                 return NotFound($"No se encontró el vuelo con ID {id}");
 
             existing.FlightCode = dto.FlightNumber;
-            existing.AirlineId = dto.AirlineId.ToString();
+            existing.AirlineId = (int)dto.AirlineId;
             existing.Status = "Libre";
             existing.Origin = "Pendiente";
             existing.Destination = "Pendiente";

@@ -3,7 +3,7 @@ namespace PortHub.Api.Dtos;
 // Datos recibidos al crear o modificar un slot
 public record RequestSlotDto(
     DateTime Date,
-    int Runway,
+    string Runway,
     int Gate_id,
     string Status,
     int Flight_id
@@ -13,8 +13,8 @@ public record RequestSlotDto(
 public record ResponseSlotDto(
     int? Id,
     DateTime Date,
-    int Runway,
-    int Gate_id,
+    string? Runway,
+    int GateId,
     string Status,
-    int Flight_id
+    int FlightId
 );

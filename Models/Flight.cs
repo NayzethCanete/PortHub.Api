@@ -1,14 +1,35 @@
-using System; 
-namespace PortHub.Api.Models;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public class Flight
+namespace PortHub.Api.Models
 {
-    public int FlightId { get; set; }
-    public string FlightCode { get; set; }
-    public string AirlineId { get; set; }
-    public string Origin { get; set; }
-    public string Destination { get; set; }
-    public string Status { get; set; }
-    public string? SlotId { get; set; }
-
+    public class Flight
+    {
+        [Key]
+        public int FlightId { get; set; }
+        
+        [Required]
+        public string FlightCode { get; set; }
+        
+        [Required]
+        public int AirlineId { get; set; } 
+        
+        [Required]
+        public string Origin { get; set; }
+        
+        [Required]
+        public string Destination { get; set; }
+        
+        [Required]
+        public string Status { get; set; }
+        
+        public int? SlotId { get; set; } 
+        
+        [ForeignKey("AirlineId")]
+        public virtual Airline? Airline { get; set; }
+        
+        public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+        
+        public virtual Slot? Slot { get; set; }
+    }
 }

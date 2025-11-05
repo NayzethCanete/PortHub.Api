@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-using PortHub.Api.Interface;
-=======
 using Microsoft.EntityFrameworkCore;
 using PortHub.Api.Data;
-using PortHub.Api.Interfaces;
->>>>>>> BD-setup
+using PortHub.Api.Interfaces; 
 using PortHub.Api.Services;
 using DotNetEnv;
 
@@ -13,19 +9,6 @@ Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-<<<<<<< HEAD
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-//Añade los controllers
-builder.Services.AddControllers();
-
-
-// DI - Añadir servicios de la capa de negocio
-builder.Services.AddHttpClient(); // Registrar HttpClient
-=======
 // ===== CONFIGURACIÓN DE BASE DE DATOS SQL SERVER =====
 var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
@@ -49,22 +32,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     }
 });
 
-// ===== INYECCIÓN DE DEPENDENCIAS =====
->>>>>>> BD-setup
+// ===== INYECCIÓN DE DEPENDENCIAS (Combinadas) =====
 builder.Services.AddScoped<IAirlineService, AirlineService>();
-//builder.Services.AddScoped<ISlotService, SlotService>();
-//builder.Services.AddScoped<IGateService, GateService>();
-builder.Services.AddScoped<IBoardingService, BoardingService>();
-<<<<<<< HEAD
-builder.Services.AddScoped<IFlightService, FlightService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 builder.Services.AddScoped<IGateService, GateService>();
+builder.Services.AddScoped<IBoardingService, BoardingService>();
+builder.Services.AddScoped<IFlightService, FlightService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
-// Construir la app
-var app = builder.Build();
 
-// Configurar el pipeline de la aplicación
-=======
 
 builder.Services.AddHttpClient("AirlineApiClient", client =>
 {
@@ -121,14 +96,13 @@ if (app.Environment.IsDevelopment())
     }
 }
 
->>>>>>> BD-setup
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "PortHub API v1");
-        c.RoutePrefix = string.Empty;
+        c.RoutePrefix = string.Empty; 
     });
 }
 
@@ -138,9 +112,6 @@ app.UseCors("AllowAll");
 //Mapea los controllers.
 app.MapControllers();
 
-<<<<<<< HEAD
-app.Run();
-=======
 // Health check
 app.MapGet("/health", () => Results.Ok(new
 {
@@ -151,7 +122,6 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 Console.WriteLine("PortHub API iniciada correctamente");
-Console.WriteLine($"Swagger UI: http://localhost:5000");
+Console.WriteLine($"Swagger UI: http://localhost:5000"); // Asumiendo puerto 5000
 
 app.Run();
->>>>>>> BD-setup

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using PortHub.Api.Dtos;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
-using PortHub.Api.Interface;
+using PortHub.Api.Dtos;
 
 namespace PortHub.Api.Controllers
 {
@@ -18,7 +18,7 @@ namespace PortHub.Api.Controllers
         }
 
         private static ResponseTicketDto ToDto(Ticket t) =>
-            new(t.Flight_id, t.Passenger_name, t.Seat, t.Status);
+            new(t.Id, t.FlightId, t.PassengerName, t.Seat, t.Status); 
 
         [HttpGet]
         public IActionResult GetAll()
@@ -45,10 +45,10 @@ namespace PortHub.Api.Controllers
 
             var ticket = new Ticket
             {
-                Flight_id = dto.Flight_id,
-                Passenger_name = dto.Passenger_name,
+                FlightId = dto.FlightId,
+                PassengerName = dto.PassengerName, 
                 Seat = dto.Seat,
-                Status = dto.Status
+                Status = dto.Status ?? "Emitido"
             };
 
             var created = _ticketService.Add(ticket);
@@ -64,10 +64,10 @@ namespace PortHub.Api.Controllers
             var ticket = new Ticket
             {
                 Id = id,
-                Flight_id = dto.Flight_id,
-                Passenger_name = dto.Passenger_name,
+                FlightId = dto.FlightId, 
+                PassengerName = dto.PassengerName, 
                 Seat = dto.Seat,
-                Status = dto.Status
+                Status = dto.Status ?? "Emitido"
             };
 
             var updated = _ticketService.Update(ticket, id);
@@ -85,18 +85,6 @@ namespace PortHub.Api.Controllers
                 return NotFound(new { code = "NOT_FOUND", message = "Ticket no encontrado" });
 
             return NoContent();
-        }
-
-        // Validación de ticket a Aerolíneas, para embarque.
-        [HttpPost("validate")]
-        public IActionResult ValidateTicket([FromBody] TicketValidationRequest request)
-        {
-            var result = _ticketService.ValidateTicket(request);
-            if(result.IsValid)
-            {
-                return Ok(result);
-            }
-            return BadRequest(result);
         }
     }
 }

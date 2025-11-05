@@ -1,26 +1,18 @@
-<<<<<<< HEAD
-using System; 
-=======
->>>>>>> BD-setup
-namespace PortHub.Api.Models;
-
-public class Gate
+using System.ComponentModel.DataAnnotations;
+namespace PortHub.Api.Models
 {
-<<<<<<< HEAD
-    public int Id { get; set; }
-    public string Name { get; set; } 
-    public int GateId { get; set; }
-    public string GateName { get; set; } 
-    public string Location { get; set; }
+    public class Gate
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        public string Name { get; set; }
+        
+        public string? Location { get; set; }
+        public bool IsAvailable { get; set; } = true;
 
-
+        // Relación: Un gate tiene muchos slots
+        public virtual ICollection<Slot> Slots { get; set; } = new List<Slot>();
+    }
 }
-=======
-    public int GateId { get; set; }  
-    public string GateName { get; set; }  
-    public string Location { get; set; }  
-    public bool Available { get; set; } = true; 
-    
-    public ICollection<Slot> Slots { get; set; } = new List<Slot>();
-}
->>>>>>> BD-setup

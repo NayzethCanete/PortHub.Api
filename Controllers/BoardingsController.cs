@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Dtos;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 
 namespace PortHub.Api.Controllers;
@@ -19,8 +19,6 @@ public class BoardingController : ControllerBase
     {
         _boardingService = boardingService;
     }
-<<<<<<< HEAD
-=======
 
     [HttpGet]
     public IActionResult GetAll()
@@ -72,7 +70,7 @@ public class BoardingController : ControllerBase
         var newBoarding = new Boarding
         {
             TicketId = ticketId,
-            SlotId = dto.FlightId, // Usando FlightId como SlotId temporalmente
+            SlotId = dto.FlightId, 
             AccessTime = DateTime.UtcNow,
             Validation = false
         };
@@ -82,7 +80,7 @@ public class BoardingController : ControllerBase
         var response = new BoardingResponseDto(
             created.BoardingId,
             created.TicketId.ToString(),
-            created.Slot.GateId ?? 0,
+            created.Slot?.GateId ?? 0, 
             created.AccessTime,
             created.Validation
         );
@@ -108,7 +106,7 @@ public class BoardingController : ControllerBase
         var response = new BoardingResponseDto(
             result.BoardingId,
             result.TicketId.ToString(),
-            result.Slot.GateId ?? 0,
+            result.Slot?.GateId ?? 0, 
             result.AccessTime,
             result.Validation
         );
@@ -126,5 +124,4 @@ public class BoardingController : ControllerBase
 
         return NoContent();
     }
->>>>>>> BD-setup
 }

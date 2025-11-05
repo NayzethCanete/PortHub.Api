@@ -1,20 +1,21 @@
-namespace PortHub.Api.Models;
-
-public class Airline
+using System.ComponentModel.DataAnnotations;
+namespace PortHub.Api.Models
 {
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string Code { get; set; }
-    public string Country { get; set; }
-    public string BaseAddress { get; set; }
-<<<<<<< HEAD
-    public ICollection<Flight> Flights { get; set; }
-
-=======
-    public string ApiKey { get; set; }
-    public string ApiUrl { get; set; }
-    
-    // Navegación
-    public ICollection<Slot> Slots { get; set; } = new List<Slot>();
->>>>>>> BD-setup
+    public class Airline
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        public string Name { get; set; } = string.Empty;
+        
+        [Required]
+        public string Code { get; set; } = string.Empty;
+        
+        public string? Country { get; set; }
+        public string? BaseAddress { get; set; }
+        public string? ApiUrl { get; set; }
+        public string? ApiKey { get; set; }
+        public virtual ICollection<Flight> Flights { get; set; } = new List<Flight>();
+    }
 }

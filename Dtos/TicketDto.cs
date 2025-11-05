@@ -1,7 +1,7 @@
 namespace PortHub.Api.Dtos;
 
-public record RequestTicketDto(int Flight_id, string Passenger_name, string Seat, string Status);
-public record ResponseTicketDto(int Flight_id, string Passenger_name, string Seat, string Status);
+public record RequestTicketDto(int FlightId, string PassengerName, string Seat, string Status);
+public record ResponseTicketDto(int Id,int FlightId, string PassengerName, string Seat, string Status);
 
 // DTO para enviar la solicitud de validación
 public record TicketValidationRequest(int TicketNumber, string FlightDate);

@@ -1,30 +1,25 @@
-<<<<<<< HEAD
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-=======
-/*using System; 
->>>>>>> BD-setup
-namespace PortHub.Api.Models;
-
-public class Ticket
+namespace PortHub.Api.Models
 {
-    [Required]
-    public int? Id { get; set; }
+    public class Ticket
+    {
+        [Key]
+        public int Id { get; set; }
+        
+        [Required]
+        public int FlightId { get; set; }
+        
+        public string? PassengerName { get; set; }         public string? Seat { get; set; }
+        
+        [Required]
+        public string Status { get; set; }
 
-    [Required]
-    public int Flight_id { get; set; }
-
-    [Required, MaxLength(50)]
-    public string Passenger_name { get; set; }
-
-    [Required, MaxLength(10)]
-    public string Seat { get; set; }
-
-    [Required, MaxLength(20)]
-    public string Status { get; set; }
-<<<<<<< HEAD
+        // Relaciones
+        [ForeignKey("FlightId")]
+        public virtual Flight? Flight { get; set; }
+        
+        public virtual Boarding? Boarding { get; set; }
+    }
 }
-=======
-}
-*/
->>>>>>> BD-setup

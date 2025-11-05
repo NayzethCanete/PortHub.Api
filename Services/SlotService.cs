@@ -1,55 +1,77 @@
+// Reemplaza el contenido actual de SlotService.cs con esto:
+
 using PortHub.Api.Models;
-using PortHub.Api.Interface;
+using PortHub.Api.Interfaces;
+using PortHub.Api.Data;
+using Microsoft.EntityFrameworkCore; // Asegúrate de agregar este using
 
 namespace PortHub.Api.Services
 {
     public class SlotService : ISlotService
     {
-        // Simulación de base de datos en memoria
-        private static readonly List<Slot> _slots = new();
-        private static int _nextId = 1;
+        private readonly AppDbContext _context; 
+       
+        public SlotService(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public IEnumerable<Slot> GetAll()
         {
-            return _slots;
+            // ANTES: return _slots;
+            return _context.Slots.ToList(); // CORREGIDO
         }
+
         public Slot? GetById(int id)
         {
-            return _slots.FirstOrDefault(s => s.Id == id);
+            // ANTES: return _slots.FirstOrDefault(s => s.Id == id);
+            return _context.Slots.FirstOrDefault(s => s.Id == id); // CORREGIDO
         }
 
         public Slot Add(Slot slot)
         {
-            if (_slots.Any(s => s.Date == slot.Date && s.Runway == slot.Runway))
+            // ANTES: (Error CS1061 por s.Date)
+            // if (_slots.Any(s => s.Date == slot.Date && s.Runway == slot.Runway))
+            // CORREGIDO (usa ScheduleTime y _context)
+            if (_context.Slots.Any(s => s.ScheduleTime == slot.ScheduleTime && s.Runway == slot.Runway))
                 throw new InvalidOperationException("Ya hay un Slot con el mismo Horario y Pista.");
 
-            slot.Id = _nextId++;
-            slot.Status ??= "Reservado"; //Por Defecto.
-            _slots.Add(slot);
+            // ANTES: slot.Id = _nextId++;
+            slot.Status ??= "Reservado";
+            
+            // ANTES: _slots.Add(slot);
+            _context.Slots.Add(slot); // CORREGIDO
+            _context.SaveChanges(); // CORREGIDO: Añadir guardado
             return slot;
         }
 
         public Slot? Update(Slot slot, int id)
         {
-            var existing = _slots.FirstOrDefault(s => s.Id == id);
+            // ANTES: var existing = _slots.FirstOrDefault(s => s.Id == id);
+            var existing = _context.Slots.FirstOrDefault(s => s.Id == id); // CORREGIDO
             if (existing == null)
                 return null;
 
-            existing.Date = slot.Date;
+            // ANTES: existing.ScheduledTime = slot.ScheduleTime; (Error de tipeo)
+            existing.ScheduleTime = slot.ScheduleTime; // CORREGIDO (sin 'd')
             existing.Runway = slot.Runway;
-            existing.Gate_id = slot.Gate_id;
-            existing.Flight_id = slot.Flight_id;
+            existing.GateId = slot.GateId;
+            existing.FlightId = slot.FlightId;
             existing.Status = slot.Status ?? existing.Status;
 
+            _context.SaveChanges(); // CORREGIDO: Añadir guardado
             return existing;
         }
 
         public bool Delete(int id)
         {
-            var slot = _slots.FirstOrDefault(s => s.Id == id);
+            // ANTES: var slot = _slots.FirstOrDefault(s => s.Id == id);
+            var slot = _context.Slots.FirstOrDefault(s => s.Id == id); // CORREGIDO
             if (slot == null) return false;
 
-            _slots.Remove(slot);
+            // ANTES: _slots.Remove(slot);
+            _context.Slots.Remove(slot); // CORREGIDO
+            _context.SaveChanges(); // CORREGIDO: Añadir guardado
             return true;
         }
 
@@ -57,22 +79,29 @@ namespace PortHub.Api.Services
         public Slot ReserveSlot(Slot slot)
         {
             slot.Status = "Reservado";
+            // El método Add ya usa _context y SaveChanges
             return Add(slot);
         }
 
         public Slot ConfirmSlot(int id)
         {
-            var slot = _slots.FirstOrDefault(s => s.Id == id)
+            // ANTES: var slot = _slots.FirstOrDefault(s => s.Id == id)
+            var slot = _context.Slots.FirstOrDefault(s => s.Id == id) // CORREGIDO
                 ?? throw new KeyNotFoundException("Slot no encontrado.");
+            
             slot.Status = "Confirmado";
+            _context.SaveChanges(); // CORREGIDO: Añadir guardado
             return slot;
         }
 
         public Slot CancelSlot(int id)
         {
-            var slot = _slots.FirstOrDefault(s => s.Id == id)
+            // ANTES: var slot = _slots.FirstOrDefault(s => s.Id == id)
+            var slot = _context.Slots.FirstOrDefault(s => s.Id == id) // CORREGIDO
                 ?? throw new KeyNotFoundException("Slot no encontrado.");
+            
             slot.Status = "Liberado";
+            _context.SaveChanges(); // CORREGIDO: Añadir guardado
             return slot;
         }
     }
