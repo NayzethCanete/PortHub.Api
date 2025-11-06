@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Dtos;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PortHub.Api.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class FlightsController : ControllerBase

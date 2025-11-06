@@ -1,9 +1,7 @@
-// Reemplaza el contenido actual de SlotService.cs con esto:
-
 using PortHub.Api.Models;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Data;
-using Microsoft.EntityFrameworkCore; // Asegúrate de agregar este using
+using Microsoft.EntityFrameworkCore;
 
 namespace PortHub.Api.Services
 {

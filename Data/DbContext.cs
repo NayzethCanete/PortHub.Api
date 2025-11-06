@@ -38,6 +38,23 @@ namespace PortHub.Api.Data
                 .HasForeignKey<Slot>(s => s.FlightId); 
                 */
 
+            //Usuarios:
+            modelBuilder.Entity<User>()
+                .HasKey(u => u.Id);
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.Username)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.PasswordHash)
+                .IsRequired();
+
             // Gate -> Slot (One-to-Many)
             modelBuilder.Entity<Gate>()
                 .HasMany(g => g.Slots)

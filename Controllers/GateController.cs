@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Models;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PortHub.Api.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json")]

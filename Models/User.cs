@@ -13,8 +13,5 @@ namespace PortHub.Api.Models
 
         [Required]
         public string PasswordHash { get; set; } // Almacena contraseñas encriptadas
-
-        [Required]
-        public string Role { get; set; } // Ejemplo: "Admin", "User"
     }
 }

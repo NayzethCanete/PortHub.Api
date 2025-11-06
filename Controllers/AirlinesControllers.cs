@@ -9,6 +9,7 @@ using PortHub.Api.Models;
 
 namespace PortHub.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class AirlinesController : ControllerBase

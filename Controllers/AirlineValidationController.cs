@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
 
 /* DATOS DE BODY, PARA TESTEAR API DE VALIDACIÓN:
 {
@@ -10,6 +11,7 @@ using PortHub.Api.Dtos;
 
 namespace PortHub.Api.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/airline")]
     public class AirlineValidationController : ControllerBase

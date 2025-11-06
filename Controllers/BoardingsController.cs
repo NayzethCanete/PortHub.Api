@@ -7,8 +7,10 @@ using PortHub.Api.Dtos;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 
+
 namespace PortHub.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class BoardingController : ControllerBase
