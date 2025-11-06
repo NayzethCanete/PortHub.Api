@@ -1,7 +1,7 @@
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 using Microsoft.AspNetCore.Mvc;
-using PortHub.Api.Dto;
+using PortHub.Api.Dtos;
 using BCrypt.Net;
 using Microsoft.AspNetCore.Authorization;
 
@@ -14,7 +14,7 @@ public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
 
-    public UsersController(IUserService _userService)
+    public UsersController(IUserService userService)
     {
         _userService = userService;
     }
@@ -37,7 +37,7 @@ public class UsersController : ControllerBase
             Username = userDto.Username,
             PasswordHash = passHash
         };
-        user = _userService.Add(persona);
+        user = _userService.AddUser(user);
         return CreatedAtAction(nameof(GetAll), new UserDto(user.Username));
     }
 }

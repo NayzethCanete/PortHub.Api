@@ -1,5 +1,4 @@
 using PortHub.Api.Models;
-using PortHub.Api.Context;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Data;
 //using Microsoft.EntityFrameworkCore;
@@ -15,7 +14,7 @@ public class UserService : IUserService
 
     public User AddUser(User user)
     {
-        _context.Users.AddUser(user);
+        _context.Users.Add(user);
         _context.SaveChanges();
         return user;
     }

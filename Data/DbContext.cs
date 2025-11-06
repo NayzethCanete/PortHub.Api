@@ -14,7 +14,7 @@ namespace PortHub.Api.Data
         public DbSet<Slot> Slots { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<Boarding> Boardings { get; set; }
-        //public DbSet<User> Users { get; set; }
+        public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

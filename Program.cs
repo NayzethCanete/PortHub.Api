@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using PortHub.Api.Data;
 using PortHub.Api.Interfaces; 
 using PortHub.Api.Services;
+using PortHub.Api.Models;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 // Cargar variables de entorno
 Env.Load();
