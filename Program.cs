@@ -23,7 +23,9 @@ if (string.IsNullOrEmpty(connectionString))
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(connectionString); 
+    //options.UseSqlServer(connectionString); 
+    options.UseNpgsql(connectionString); //Para Postgree
+
     
     if (builder.Environment.IsDevelopment())
     {

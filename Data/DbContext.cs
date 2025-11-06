@@ -55,6 +55,7 @@ namespace PortHub.Api.Data
                 .HasOne(t => t.Boarding)
                 .WithOne(b => b.Ticket)
                 .HasForeignKey<Boarding>(b => b.TicketId);
+
         }
     }
 }
