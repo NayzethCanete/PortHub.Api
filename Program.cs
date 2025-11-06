@@ -7,6 +7,7 @@ using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi.Models;
 
 // Cargar variables de entorno
 Env.Load();
@@ -64,7 +65,8 @@ builder.Services.AddScoped<IBoardingService, BoardingService>();
 //builder.Services.AddScoped<IFlightService, FlightService>();
 // La logica de vuelo es para Aerolineas.
 builder.Services.AddScoped<ITicketService, TicketService>();
-
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddHttpClient("AirlineApiClient", client =>
 {
@@ -83,11 +85,31 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "PortHub.Api", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "PortHub Airport API",
-        Version = "v1",
-        Description = "API REST para la gestión de operaciones aeroportuarias"
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Solo pega tu token JWT. El prefijo 'Bearer' se añadirá automáticamente."
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
     });
 });
 
@@ -133,6 +155,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+
+app.Use(async (context, next) => //MIDDLEWARE que añade "Bearer" Antes del Header [Authorization].
+{
+    var auth = context.Request.Headers["Authorization"].FirstOrDefault();
+    if (!string.IsNullOrEmpty(auth) && !auth.StartsWith("Bearer "))
+    {
+        context.Request.Headers["Authorization"] = "Bearer " + auth;
+    }
+    await next();
+});
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 //Mapea los controllers.
 app.MapControllers();

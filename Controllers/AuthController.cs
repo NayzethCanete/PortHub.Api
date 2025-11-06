@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 using PortHub.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace PortHub.Api.Controllers;
@@ -17,6 +18,7 @@ namespace PortHub.Api.Controllers;
             _authService = authService;
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public ActionResult<string> Login([FromBody] LoginDto loginDto)
         {

@@ -19,6 +19,7 @@ public class UsersController : ControllerBase
         _userService = userService;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public ActionResult<List<UserDto>> GetAll()
     {
