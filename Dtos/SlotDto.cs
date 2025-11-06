@@ -5,7 +5,7 @@ public record RequestSlotDto(
     DateTime Date,
     string Runway,
     int? Gate_id,
-    string Status,
+    string? Status,
     string FlightCode
 );
 

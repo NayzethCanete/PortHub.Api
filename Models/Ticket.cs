@@ -15,10 +15,10 @@ namespace PortHub.Api.Models
         public string? Seat { get; set; }
         
         [Required]
-        public string Status { get; set; }
+        public string Status { get; set; } = "Emitido";
 
         // Relaciones
 
-        public virtual Boarding? Boarding { get; set; }
+        //public virtual Boarding? Boarding { get; set; }
     }
 }

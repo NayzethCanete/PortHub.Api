@@ -18,7 +18,7 @@ namespace PortHub.Api.Controllers
         }
 
         private static ResponseGateDto ToDto(Gate g) =>
-            new(g.Name, g.Location);
+            new(g.Id, g.Name, g.Location);
 
         [HttpGet]
         public IActionResult GetAll()

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 using PortHub.Api.Dtos;
-//using PortHub.Api.Security; // <-- Importante: Para la API Key
+using PortHub.Api.Security; 
 //using Microsoft.AspNetCore.Authorization; // <-- Importante: Para JWT
 
 namespace PortHub.Api.Controllers
@@ -114,24 +114,36 @@ namespace PortHub.Api.Controllers
 
 
         [HttpPost("reserve")]
-        //[ApiKeyAuthorize] 
+        [RequireApiKey]
         public IActionResult Reserve([FromBody] RequestSlotDto dto)
         {
             var slot = new Slot
             {
-                ScheduleTime = dto.Date, 
+                ScheduleTime = dto.Date,
                 Runway = dto.Runway,
-                GateId = dto.Gate_id,     
-                Status = "Reservado",     
-                FlightCode = dto.FlightCode  
+                GateId = dto.Gate_id,
+                Status = "Reservado",
+                FlightCode = dto.FlightCode
             };
 
-            var reserved = _slotService.ReserveSlot(slot);
-            return Ok(ToDto(reserved));
+            try
+            {
+                
+                var reserved = _slotService.ReserveSlot(slot); 
+                return Ok(ToDto(reserved));
+            }
+            catch (InvalidOperationException ex)
+
+            {
+                return Conflict(new { code = "DUPLICATE_SLOT", message = ex.Message });
+            }
         }
+        
+        
 
         [HttpPost("confirm/{id:int}")]
-       // [ApiKeyAuthorize] 
+        [RequireApiKey]
+
         public IActionResult Confirm(int id)
         {
             try
@@ -146,7 +158,7 @@ namespace PortHub.Api.Controllers
         }
 
         [HttpPost("cancel/{id:int}")]
-        //[ApiKeyAuthorize] 
+        [RequireApiKey]
         public IActionResult Cancel(int id)
         {
             try

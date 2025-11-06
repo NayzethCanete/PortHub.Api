@@ -1,14 +1,14 @@
 using PortHub.Api.Models;
 
-namespace PortHub.Api.Interfaces 
+namespace PortHub.Api.Interfaces
 {
     public interface IBoardingService
     {
-        List<Boarding> GetAll();
-        Boarding GetById(int id);
-        List<Boarding> GetBySlotId(int slotId);
+        IEnumerable<Boarding> GetAll();
+        Boarding? GetById(int id);
         Boarding Add(Boarding boarding);
-        Boarding Update(Boarding boarding, int id);
+        Boarding? Update(Boarding boarding, int id);
         bool Delete(int id);
+        Task<(bool success, string message, Boarding? boarding)> ValidateAndRegisterBoardingAsync(int ticketId, int slotId);
     }
 }

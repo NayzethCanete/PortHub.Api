@@ -17,7 +17,7 @@ namespace PortHub.Api.Models
         public string? FlightCode { get; set; }
         
         [Required] 
-        public string Status { get; set; } = string.Empty;
+        public string? Status { get; set; } = "Reservado";
 
         // Relaciones (Combinado)
     //    [ForeignKey("Flight_id")]

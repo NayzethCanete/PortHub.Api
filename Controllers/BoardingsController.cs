@@ -1,127 +1,137 @@
-using System; 
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PortHub.Api.Dtos;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
+using PortHub.Api.Dtos;
+using PortHub.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
-namespace PortHub.Api.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class BoardingController : ControllerBase
+namespace PortHub.Api.Controllers
 {
-    private readonly IBoardingService _boardingService;
-
-    public BoardingController(IBoardingService boardingService)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class BoardingsController : ControllerBase
     {
-        _boardingService = boardingService;
-    }
+        private readonly IBoardingService _boardingService;
+        private readonly AppDbContext _context;
 
-    [HttpGet]
-    public IActionResult GetAll()
-    {
-        var boardings = _boardingService.GetAll();
-
-        var response = boardings.Select(b => new BoardingResponseDto(
-            b.BoardingId,
-            b.TicketId.ToString(),
-            b.Slot.GateId ?? 0,
-            b.AccessTime,
-            b.Validation
-        )).ToList();
-
-        return Ok(response);
-    }
-
-    [HttpGet("{id}")]
-    public IActionResult GetById(int id)
-    {
-        var boarding = _boardingService.GetById(id);
-
-        if (boarding == null)
+        public BoardingsController(IBoardingService boardingService, AppDbContext context)
         {
-            return NotFound($"No se encontró un boarding con el ID {id}");
+            _boardingService = boardingService;
+            _context = context;
         }
 
-        var response = new BoardingResponseDto(
-            boarding.BoardingId,
-            boarding.TicketId.ToString(),
-            boarding.Slot?.GateId ?? 0,
-            boarding.AccessTime,
-            boarding.Validation
-        );
-
-        return Ok(response);
-    }
-
-    [HttpPost]
-    public IActionResult Create([FromBody] BoardingRequestDto dto)
-    {
-        if (!ModelState.IsValid)
+        private static BoardingResponseDto ToDto(Boarding b)
         {
-            return BadRequest(ModelState);
+            long gateIdFromSlot = b.Slot?.GateId ?? 0;
+
+            return new BoardingResponseDto(
+                b.BoardingId,
+                b.TicketId.ToString(),
+                gateIdFromSlot,
+                b.AccessTime,
+                b.Validation
+            );
         }
 
-        int.TryParse(dto.TicketNumber, out int ticketId);
-
-        var newBoarding = new Boarding
+        /// <summary>
+        /// Obtener todos los registros de embarque
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<BoardingResponseDto>), 200)]
+        public IActionResult GetAll()
         {
-            TicketId = ticketId,
-            SlotId = dto.SlotId,
-            AccessTime = DateTime.UtcNow,
-            Validation = false
-        };
+            var boardings = _context.Boardings
+                .Include(b => b.Slot)
+                .ToList();
 
-        var created = _boardingService.Add(newBoarding);
+            return Ok(boardings.Select(ToDto));
+        }
 
-        var response = new BoardingResponseDto(
-            created.BoardingId,
-            created.TicketId.ToString(),
-            created.Slot?.GateId ?? 0, 
-            created.AccessTime,
-            created.Validation
-        );
+        /// <summary>
+        /// Obtener un embarque por ID
+        /// </summary>
+        [HttpGet("{id:int}")]
+        [ProducesResponseType(typeof(BoardingResponseDto), 200)]
+        [ProducesResponseType(404)]
+        public IActionResult GetById(int id)
+        {
+            var boarding = _context.Boardings
+                .Include(b => b.Slot)
+                .FirstOrDefault(b => b.BoardingId == id);
 
-        return CreatedAtAction(nameof(GetById), new { id = created.BoardingId }, response);
-    }
+            if (boarding == null)
+                return NotFound(new { code = "NOT_FOUND", message = "Registro de embarque no encontrado" });
 
-    [HttpPut("{id}")]
-    public IActionResult Update(int id, [FromBody] BoardingRequestDto dto)
-    {
-        var existing = _boardingService.GetById(id);
-        if (existing == null)
-            return NotFound($"No se encontró el boarding con ID {id}");
+            return Ok(ToDto(boarding));
+        }
 
-        int.TryParse(dto.TicketNumber, out int ticketId);
+        /// <summary>
+        /// ENDPOINT CRÍTICO: Registrar embarque con validación de aerolínea
+        /// </summary>
+        [HttpPost("validate")]
+        [ProducesResponseType(typeof(BoardingResponseDto), 201)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> ValidateAndRegister([FromBody] BoardingValidateRequestDto dto)
+        {
+            var result = await _boardingService.ValidateAndRegisterBoardingAsync(dto.TicketId, dto.SlotId);
 
-        existing.TicketId = ticketId;
-        existing.AccessTime = DateTime.UtcNow;
-        existing.Validation = true;
+            if (!result.success)
+            {
+                return BadRequest(new
+                {
+                    code = "VALIDATION_FAILED",
+                    message = result.message
+                });
+            }
 
-        var result = _boardingService.Update(existing, id);
+            var boardingWithSlot = _context.Boardings
+                .Include(b => b.Slot)
+                .FirstOrDefault(b => b.BoardingId == result.boarding!.BoardingId);
 
-        var response = new BoardingResponseDto(
-            result.BoardingId,
-            result.TicketId.ToString(),
-            result.Slot?.GateId ?? 0, 
-            result.AccessTime,
-            result.Validation
-        );
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = result.boarding!.BoardingId },
+                ToDto(boardingWithSlot ?? result.boarding)
+            );
+        }
 
-        return Ok(response);
-    }
+        /// <summary>
+        /// Registrar embarque manualmente (sin validación - solo para testing)
+        /// </summary>
+        [HttpPost]
+        [ProducesResponseType(typeof(BoardingResponseDto), 201)]
+        [ProducesResponseType(400)]
+        public IActionResult Add([FromBody] BoardingRequestDto dto)
+        {
+            if (!int.TryParse(dto.TicketNumber, out int ticketId))
+            {
+                return BadRequest(new
+                {
+                    code = "VALIDATION_ERROR",
+                    message = "El TicketNumber debe ser un número entero."
+                });
+            }
 
-    [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
-    {
-        var deleted = _boardingService.Delete(id);
+            var boarding = new Boarding
+            {
+                TicketId = ticketId,
+                SlotId = dto.SlotId,
+                AccessTime = DateTime.UtcNow,
+                Validation = false
+            };
 
-        if (!deleted)
-            return NotFound($"No se encontró el boarding con ID {id}");
+            var created = _boardingService.Add(boarding);
 
-        return NoContent();
+            var createdWithSlot = _context.Boardings
+                .Include(b => b.Slot)
+                .FirstOrDefault(b => b.BoardingId == created.BoardingId);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = created.BoardingId },
+                ToDto(createdWithSlot ?? created)
+            );
+        }
     }
 }

@@ -1,48 +1,56 @@
 using PortHub.Api.Models;
 using PortHub.Api.Interfaces;
+using PortHub.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace PortHub.Api.Services
 {
     public class GateService : IGateService
     {
-        // Simulación de almacenamiento en memoria
-        private static readonly List<Gate> _gates = new();
-        private static int _nextId = 1;
+        private readonly AppDbContext _context;
+
+        public GateService(AppDbContext context)
+        {
+            _context = context;
+        }
 
         public List<Gate> GetAll()
         {
-            return _gates;
+            return _context.Gates.ToList();
         }
 
         public Gate? GetById(int id)
         {
-            return _gates.FirstOrDefault(g => g.Id == id);
+            return _context.Gates.FirstOrDefault(g => g.Id == id);
         }
 
         public Gate Add(Gate gate)
         {
-            gate.Id = _nextId++;
-            _gates.Add(gate);
+            _context.Gates.Add(gate);
+            _context.SaveChanges(); 
             return gate;
         }
 
         public Gate? Update(Gate gate, int id)
         {
-            var existing = _gates.FirstOrDefault(g => g.Id == id);
+            var existing = _context.Gates.FirstOrDefault(g => g.Id == id); // CORREGIDO
             if (existing == null)
                 return null;
 
             existing.Name = gate.Name;
             existing.Location = gate.Location;
+            
+            _context.SaveChanges(); 
             return existing;
         }
 
         public bool Delete(int id)
         {
-            var gate = _gates.FirstOrDefault(g => g.Id == id);
+            var gate = _context.Gates.FirstOrDefault(g => g.Id == id);
             if (gate == null) return false;
-
-            _gates.Remove(gate);
+            
+            _context.Gates.Remove(gate); 
+            _context.SaveChanges(); 
             return true;
         }
     }

@@ -7,11 +7,9 @@ namespace PortHub.Api.Interfaces
     {
         List<Ticket> GetAll();
         Ticket? GetById(int id);
+        Ticket Add(Ticket ticket);
         Ticket? Update(Ticket ticket, int id);
         bool Delete(int id);
-        Ticket Add(Ticket ticket);
-
-        // Método: Verificar validez del ticket, con Dto.
-        TicketValidationResponse ValidateTicket(TicketValidationRequest request);
+        Task<TicketValidationResponse> ValidateTicketAsync(int ticketId, string flightDate, string airlineApiUrl);
     }
 }

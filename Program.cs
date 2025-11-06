@@ -1,128 +1,109 @@
 using Microsoft.EntityFrameworkCore;
 using PortHub.Api.Data;
-using PortHub.Api.Interfaces; 
+using PortHub.Api.Interfaces;
 using PortHub.Api.Services;
+using PortHub.Api.Security;
 using DotNetEnv;
-
-// Cargar variables de entorno
-Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== CONFIGURACIÓN DE BASE DE DATOS SQL SERVER =====
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+// Cargar variables de entorno desde .env
+Env.Load();
 
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new InvalidOperationException(
-        "No se encontró la cadena de conexión. " +
-        "Configura DB_CONNECTION_STRING en .env o en appsettings.json"
-    );
-}
+// Add services to the container.
+builder.Services.AddControllers();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    options.UseSqlServer(connectionString); 
-    
-    if (builder.Environment.IsDevelopment())
-    {
-        options.EnableSensitiveDataLogging();
-        options.EnableDetailedErrors();
-    }
-});
-
-// ===== INYECCIÓN DE DEPENDENCIAS (Combinadas) =====
-builder.Services.AddScoped<IAirlineService, AirlineService>();
-builder.Services.AddScoped<ISlotService, SlotService>();
-builder.Services.AddScoped<IGateService, GateService>();
-builder.Services.AddScoped<IBoardingService, BoardingService>();
-//builder.Services.AddScoped<IFlightService, FlightService>();
-// La logica de vuelo es para Aerolineas.
-builder.Services.AddScoped<ITicketService, TicketService>();
-
-
-builder.Services.AddHttpClient("AirlineApiClient", client =>
+// Configurar HttpClient con timeout adecuado
+builder.Services.AddHttpClient<ITicketService, TicketService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
-    client.DefaultRequestHeaders.Add("User-Agent", "PortHub-Airport-System");
 });
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
-        options.JsonSerializerOptions.WriteIndented = true;
-    });
+// Configuración de la Base de Datos usando la variable de entorno
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
+    ?? "Server=LENOVO\\SQLEXPRESS;Database=PortHubApi;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;";
 
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "PortHub Airport API",
-        Version = "v1",
-        Description = "API REST para la gestión de operaciones aeroportuarias"
-    });
-});
+// Registrar Servicios con Scoped (importante para DbContext)
+builder.Services.AddScoped<ISlotService, SlotService>();
+builder.Services.AddScoped<IGateService, GateService>();
+builder.Services.AddScoped<IAirlineService, AirlineService>();
+builder.Services.AddScoped<IBoardingService, BoardingService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
 
-
+// Configurar CORS (importante para desarrollo)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowAll",
+        builder => builder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "PortHub API", Version = "v1" });
+    
+    // Configurar API Key en Swagger
+    c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        Description = "API Key necesaria para endpoints de aerolíneas. Header: X-API-Key",
+        Name = "X-API-Key",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "ApiKeyScheme"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        try
-        {
-            dbContext.Database.Migrate();
-            Console.WriteLine(" Base de datos migrada exitosamente");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error al migrar la base de datos: {ex.Message}");
-        }
-    }
-}
-
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "PortHub API v1");
-        c.RoutePrefix = string.Empty; 
+        c.RoutePrefix = string.Empty; // Swagger en la raíz
     });
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
+
+// Habilitar CORS
 app.UseCors("AllowAll");
 
-//Mapea los controllers.
+// Añadir el Middleware de API Key ANTES de UseAuthorization
+app.UseMiddleware<ApiKeyAuthMiddleware>();
+
+app.UseAuthorization();
+
 app.MapControllers();
 
-// Health check
-app.MapGet("/health", () => Results.Ok(new
-{
-    status = "healthy",
-    timestamp = DateTime.UtcNow,
-    environment = app.Environment.EnvironmentName,
-    database = "SQL Server"
-}));
-
-Console.WriteLine("PortHub API iniciada correctamente");
-Console.WriteLine($"Swagger UI: http://localhost:5000"); // Asumiendo puerto 5000
+// Mensaje de inicio
+app.Logger.LogInformation("🚀 PortHub API iniciada correctamente");
+app.Logger.LogInformation("📊 Swagger UI disponible en: http://localhost:5000");
+app.Logger.LogInformation("🔗 Connection String: {ConnectionString}", connectionString.Replace("Password=", "Password=***"));
 
 app.Run();

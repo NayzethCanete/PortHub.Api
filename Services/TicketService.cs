@@ -1,39 +1,44 @@
 using PortHub.Api.Models;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Dtos;
-
+using PortHub.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Json;
 
 namespace PortHub.Api.Services
 {
     public class TicketService : ITicketService
     {
+        private readonly AppDbContext _context;
         private readonly HttpClient _httpClient;
-        private static readonly List<Ticket> _tickets = new();
-        private static int _nextId = 1;
 
-        public TicketService(HttpClient httpClient){_httpClient = httpClient;}
+        public TicketService(AppDbContext context, HttpClient httpClient)
+        {
+            _context = context;
+            _httpClient = httpClient;
+        }
 
         public List<Ticket> GetAll()
         {
-            return _tickets;
+            return _context.Tickets.ToList();
         }
 
         public Ticket? GetById(int id)
         {
-            return _tickets.FirstOrDefault(t => t.Id == id);
+            return _context.Tickets.FirstOrDefault(t => t.Id == id);
         }
 
         public Ticket Add(Ticket ticket)
         {
-            ticket.Id = _nextId++;
-            ticket.Status ??= "válido";
-            _tickets.Add(ticket);
+            ticket.Status ??= "Emitido";
+            _context.Tickets.Add(ticket);
+            _context.SaveChanges();
             return ticket;
         }
 
         public Ticket? Update(Ticket ticket, int id)
         {
-            var existing = _tickets.FirstOrDefault(t => t.Id == id);
+            var existing = _context.Tickets.FirstOrDefault(t => t.Id == id);
             if (existing == null)
                 return null;
 
@@ -41,32 +46,47 @@ namespace PortHub.Api.Services
             existing.PassengerName = ticket.PassengerName;
             existing.Seat = ticket.Seat;
             existing.Status = ticket.Status;
+
+            _context.SaveChanges();
             return existing;
         }
 
         public bool Delete(int id)
         {
-            var ticket = _tickets.FirstOrDefault(t => t.Id == id);
+            var ticket = _context.Tickets.FirstOrDefault(t => t.Id == id);
             if (ticket == null) return false;
 
-            _tickets.Remove(ticket);
+            _context.Tickets.Remove(ticket);
+            _context.SaveChanges();
             return true;
         }
 
-        // Validar Ticket antes de embarque.
-        public TicketValidationResponse ValidateTicket(TicketValidationRequest request)
+        // VALIDACIÓN CON API DE AEROLÍNEA
+        public async Task<TicketValidationResponse> ValidateTicketAsync(int ticketId, string flightDate, string airlineApiUrl)
         {
-            // Enviar la solicitud a la API de la aerolínea
-            var response = _httpClient.PostAsJsonAsync("http://localhost:5241/api/airline/validate-ticket", request).Result;
-        
-        //API de Prueba.
-        if (response.IsSuccessStatusCode)
-        {
-            var validationResponse = response.Content.ReadFromJsonAsync<TicketValidationResponse>().Result;
-            return validationResponse ?? new TicketValidationResponse(false, "Error al procesar la respuesta");
-        }
+            try
+            {
+                var ticket = _context.Tickets.FirstOrDefault(t => t.Id == ticketId);
+                if (ticket == null)
+                {
+                    return new TicketValidationResponse(false, "Ticket no encontrado en el sistema");
+                }
 
-            return new TicketValidationResponse(false, "Error al conectar con la API de aerolínea");
+                var request = new TicketValidationRequest(ticketId, flightDate);
+                var response = await _httpClient.PostAsJsonAsync($"{airlineApiUrl}/validate-ticket", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var validationResponse = await response.Content.ReadFromJsonAsync<TicketValidationResponse>();
+                    return validationResponse ?? new TicketValidationResponse(false, "Error al procesar respuesta");
+                }
+
+                return new TicketValidationResponse(false, $"Error al contactar aerolínea: {response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                return new TicketValidationResponse(false, $"Error de conexión: {ex.Message}");
+            }
         }
     }
 }

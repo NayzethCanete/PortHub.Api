@@ -30,11 +30,9 @@ namespace PortHub.Api.Services
 
         public Slot Add(Slot slot)
         {
-            // ANTES: (Error CS1061 por s.Date)
-            // if (_slots.Any(s => s.Date == slot.Date && s.Runway == slot.Runway))
-            // CORREGIDO (usa ScheduleTime y _context)
+            
             if (_context.Slots.Any(s => s.ScheduleTime == slot.ScheduleTime && s.Runway == slot.Runway))
-                throw new InvalidOperationException("Ya hay un Slot con el mismo Horario y Pista.");
+                throw new InvalidOperationException("Ya hay un Slot con el mismo Horario y Pista, por lo cual no se le puede asignar el mismo.");
 
             // ANTES: slot.Id = _nextId++;
             slot.Status ??= "Reservado";

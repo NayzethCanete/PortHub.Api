@@ -8,8 +8,6 @@ namespace PortHub.Api.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Airline> Airlines { get; set; }
-        
-        //public DbSet<Flight> Flights { get; set; }
         public DbSet<Gate> Gates { get; set; }
         public DbSet<Slot> Slots { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
@@ -19,41 +17,112 @@ namespace PortHub.Api.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            /* Airline -> Flight
-            modelBuilder.Entity<Airline>()
-                .HasMany(a => a.Flights)
-                .WithOne(f => f.Airline)
-
-            // Flight -> Ticket
-            modelBuilder.Entity<Flight>()
-                .HasMany(f => f.Tickets)
-                .WithOne(t => t.Flight)
-                .HasForeignKey(t => t.FlightId);
+            // ===== CONFIGURACIÓN DE AIRLINES =====
+            modelBuilder.Entity<Airline>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Code).IsRequired().HasMaxLength(10);
+                entity.Property(a => a.Name).IsRequired().HasMaxLength(100);
+                entity.Property(a => a.ApiKey).IsRequired().HasMaxLength(100);
                 
-            // Flight -> Slot (One-to-One)
-            modelBuilder.Entity<Flight>()
-                .HasOne(f => f.Slot)
-                .WithOne(s => s.Flight)
-                .HasForeignKey<Slot>(s => s.FlightId); 
-                */
+                // Índices únicos
+                entity.HasIndex(a => a.Code).IsUnique();
+                entity.HasIndex(a => a.ApiKey).IsUnique();
+            });
 
-            // Gate -> Slot (One-to-Many)
-            modelBuilder.Entity<Gate>()
-                .HasMany(g => g.Slots)
-                .WithOne(s => s.Gate)
-                .HasForeignKey(s => s.GateId);
+            // ===== CONFIGURACIÓN DE GATES =====
+            modelBuilder.Entity<Gate>(entity =>
+            {
+                entity.HasKey(g => g.Id);
+                entity.Property(g => g.Name).IsRequired().HasMaxLength(50);
+                entity.Property(g => g.Location).IsRequired().HasMaxLength(100);
+            });
 
-            // Slot -> Boarding (One-to-Many)
-            modelBuilder.Entity<Slot>()
-                .HasMany(s => s.Boardings)
-                .WithOne(b => b.Slot)
-                .HasForeignKey(b => b.SlotId);
-                
-            // Ticket -> Boarding (One-to-One)
-            modelBuilder.Entity<Ticket>()
-                .HasOne(t => t.Boarding)
-                .WithOne(b => b.Ticket)
-                .HasForeignKey<Boarding>(b => b.TicketId);
+            // ===== CONFIGURACIÓN DE SLOTS =====
+            modelBuilder.Entity<Slot>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.ScheduleTime).IsRequired();
+                entity.Property(s => s.Runway).IsRequired().HasMaxLength(10);
+                entity.Property(s => s.Status).IsRequired().HasMaxLength(20);
+                entity.Property(s => s.FlightCode).IsRequired().HasMaxLength(20);
+
+                // CONSTRAINT CRÍTICO: No puede haber dos slots con mismo horario y pista
+                entity.HasIndex(s => new { s.ScheduleTime, s.Runway })
+                      .IsUnique()
+                      .HasDatabaseName("IX_Slots_ScheduleTime_Runway");
+
+                // Gate -> Slot (One-to-Many)
+                entity.HasOne(s => s.Gate)
+                      .WithMany(g => g.Slots)
+                      .HasForeignKey(s => s.GateId)
+                      .OnDelete(DeleteBehavior.SetNull); // Si se elimina gate, slot.GateId = null
+            });
+
+            // ===== CONFIGURACIÓN DE TICKETS =====
+            modelBuilder.Entity<Ticket>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.Property(t => t.FlightCode).IsRequired().HasMaxLength(20);
+                entity.Property(t => t.PassengerName).HasMaxLength(100);
+                entity.Property(t => t.Seat).HasMaxLength(10);
+                entity.Property(t => t.Status).IsRequired().HasMaxLength(20);
+            });
+
+            // ===== CONFIGURACIÓN DE BOARDINGS =====
+            modelBuilder.Entity<Boarding>(entity =>
+            {
+                entity.HasKey(b => b.BoardingId);
+                entity.Property(b => b.AccessTime).IsRequired();
+                entity.Property(b => b.Validation).IsRequired();
+
+                // Ticket -> Boarding (One-to-Many, NO One-to-One)
+                // Un ticket puede tener múltiples intentos de embarque
+                entity.HasOne(b => b.Ticket)
+                      .WithMany() // Sin propiedad de navegación inversa
+                      .HasForeignKey(b => b.TicketId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Slot -> Boarding (One-to-Many)
+                entity.HasOne(b => b.Slot)
+                      .WithMany(s => s.Boardings)
+                      .HasForeignKey(b => b.SlotId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // Índice para evitar duplicados (mismo ticket en mismo slot)
+                entity.HasIndex(b => new { b.TicketId, b.SlotId })
+                      .IsUnique()
+                      .HasDatabaseName("IX_Boardings_TicketId_SlotId");
+            });
+
+            // ===== DATOS INICIALES (SEED) =====
+            SeedData(modelBuilder);
+        }
+
+        private void SeedData(ModelBuilder modelBuilder)
+        {
+            // Seed Gates
+            modelBuilder.Entity<Gate>().HasData(
+                new Gate { Id = 1, Name = "A1", Location = "Terminal A - Norte" },
+                new Gate { Id = 2, Name = "A2", Location = "Terminal A - Norte" },
+                new Gate { Id = 3, Name = "B1", Location = "Terminal B - Sur" },
+                new Gate { Id = 4, Name = "B2", Location = "Terminal B - Sur" },
+                new Gate { Id = 5, Name = "C1", Location = "Terminal C - Internacional" }
+            );
+
+            // Seed Airline de prueba
+            modelBuilder.Entity<Airline>().HasData(
+                new Airline
+                {
+                    Id = 1,
+                    Name = "Aerolíneas Argentinas",
+                    Code = "AR",
+                    Country = "Argentina",
+                    BaseAddress = "Buenos Aires",
+                    ApiUrl = "http://localhost:5241/api/airline",
+                    ApiKey = "AR_KEY_123456789ABCDEF01234"
+                }
+            );
         }
     }
 }
