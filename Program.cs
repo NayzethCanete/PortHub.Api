@@ -5,6 +5,8 @@ using PortHub.Api.Services;
 using PortHub.Api.Models;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 // Cargar variables de entorno
 Env.Load();
