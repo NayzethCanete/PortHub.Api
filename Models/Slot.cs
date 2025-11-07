@@ -1,5 +1,6 @@
-using System.ComponentModel.DataAnnotations; 
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema; 
+using PortHub.Api.Models;
 
 namespace PortHub.Api.Models
 {
@@ -26,6 +27,10 @@ namespace PortHub.Api.Models
         /// Fecha/hora en que expira la reserva temporal (solo para estado "Reservado")
         public DateTime? ReservationExpiresAt { get; set; }
 
+        public int? AirlineId { get; set; }
+
+        [ForeignKey("AirlineId")]
+        public Airline? Airline { get; set; }
         // Relaciones
         public Gate? Gate { get; set; }
         public ICollection<Boarding> Boardings { get; set; } = new List<Boarding>();

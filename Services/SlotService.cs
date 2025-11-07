@@ -13,13 +13,11 @@ namespace PortHub.Api.Services
         private readonly SlotReservationOptions _reservationOptions;
         private readonly ILogger<SlotService> _logger;
 
-        // Lista de pistas válidas permitidas en el aeropuerto
         private static readonly HashSet<string> _validRunways = new(StringComparer.OrdinalIgnoreCase)
         {
             "Pista 1",
             "Pista 2",
             "Pista 3"
-          
         };
 
         public SlotService(
@@ -64,7 +62,7 @@ namespace PortHub.Api.Services
             existing.GateId = slot.GateId;
             existing.FlightCode = slot.FlightCode;
             existing.Status = slot.Status ?? existing.Status;
-
+           
             _context.SaveChanges();
             return existing;
         }
@@ -81,13 +79,11 @@ namespace PortHub.Api.Services
 
         public Slot ReserveSlot(Slot slot)
         {
-            // VALIDACIÓN DE PISTA
             if (!_validRunways.Contains(slot.Runway))
             {
                 throw new ArgumentException($"La pista '{slot.Runway}' no es válida. Pistas permitidas: {string.Join(", ", _validRunways)}");
             }
 
-            // ASIGNACIÓN AUTOMÁTICA DE GATE (si no se especifica)
             if (slot.GateId == null || slot.GateId == 0)
             {
                 var autoGateId = FindAvailableGateId(slot.ScheduleTime);
@@ -96,10 +92,9 @@ namespace PortHub.Api.Services
                     throw new InvalidOperationException("No hay gates disponibles automáticamente para este horario (+/- 60min).");
                 }
                 slot.GateId = autoGateId;
-                _logger.LogInformation("Gate {GateId} asignada automáticamente al slot solicitado para {Time}", autoGateId, slot.ScheduleTime);
+                _logger.LogInformation("Gate {GateId} asignada automáticamente.", autoGateId);
             }
 
-            // 3. LÓGICA DE RESERVA (verificar duplicados)
             var existingSlot = _context.Slots.FirstOrDefault(s =>
                 s.ScheduleTime == slot.ScheduleTime &&
                 s.Runway == slot.Runway);
@@ -116,31 +111,39 @@ namespace PortHub.Api.Services
                 existingSlot.ReservationExpiresAt = DateTime.UtcNow.AddMinutes(_reservationOptions.TimeoutMinutes);
                 existingSlot.GateId = slot.GateId;
                 existingSlot.FlightCode = slot.FlightCode;
-
+                existingSlot.AirlineId = slot.AirlineId; // Actualizamos el dueño al nuevo solicitante
+                
+                existingSlot.AirlineId = slot.AirlineId; // Actualizamos el dueño al nuevo solicitante
+               
                 _context.Slots.Update(existingSlot);
                 _context.SaveChanges();
 
-                _logger.LogInformation("Slot {SlotId} REUTILIZADO y reservado con Gate {GateId}.", existingSlot.Id, existingSlot.GateId);
+                _logger.LogInformation("Slot {SlotId} REUTILIZADO por Aerolínea {AirlineId}.", existingSlot.Id, existingSlot.AirlineId);
                 return existingSlot;
             }
             else
             {
-                // Crear nuevo slot
+                // Crear nuevo slot (AirlineId ya viene seteado desde el controller)
                 slot.Status = "Reservado";
                 slot.ReservationExpiresAt = DateTime.UtcNow.AddMinutes(_reservationOptions.TimeoutMinutes);
 
                 _context.Slots.Add(slot);
                 _context.SaveChanges();
 
-                _logger.LogInformation("Slot {SlotId} CREADO y reservado con Gate {GateId}.", slot.Id, slot.GateId);
+                _logger.LogInformation("Slot {SlotId} CREADO por Aerolínea {AirlineId}.", slot.Id, slot.AirlineId);
                 return slot;
             }
         }
 
-        public Slot ConfirmSlot(int id)
+        public Slot ConfirmSlot(int id, int requestingAirlineId)
         {
             var slot = _context.Slots.FirstOrDefault(s => s.Id == id)
                 ?? throw new KeyNotFoundException($"Slot {id} no encontrado");
+
+            if (slot.AirlineId != null && slot.AirlineId != requestingAirlineId)
+            {
+                throw new UnauthorizedAccessException("No puedes confirmar un slot que no te pertenece.");
+            }
 
             if (IsReservationExpired(slot))
             {
@@ -164,13 +167,19 @@ namespace PortHub.Api.Services
             return slot;
         }
 
-        public Slot CancelSlot(int id)
+        public Slot CancelSlot(int id, int requestingAirlineId)
         {
             var slot = _context.Slots.FirstOrDefault(s => s.Id == id)
                 ?? throw new KeyNotFoundException($"Slot {id} no encontrado");
 
+            if (slot.AirlineId != null && slot.AirlineId != requestingAirlineId)
+            {
+                throw new UnauthorizedAccessException("No tienes permiso para cancelar este slot porque pertenece a otra aerolínea.");
+            }
+            
             slot.Status = "Libre";
             slot.ReservationExpiresAt = null;
+            slot.AirlineId = null; 
 
             _context.SaveChanges();
             _logger.LogInformation("Slot {SlotId} cancelado/liberado", slot.Id);

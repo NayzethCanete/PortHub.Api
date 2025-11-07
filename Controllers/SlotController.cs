@@ -87,12 +87,16 @@ namespace PortHub.Api.Controllers
         [ProducesResponseType(409)]
         public IActionResult Reserve([FromBody] RequestSlotDto dto)
         {
+            // 1. Obtener el ID de la aerolínea autenticada
+            int? airlineId = HttpContext.Items["AirlineId"] as int?;
+
             var slot = new Slot
             {
                 ScheduleTime = dto.Date,
                 Runway = dto.Runway,
                 GateId = dto.Gate_id,
-                FlightCode = dto.FlightCode
+                FlightCode = dto.FlightCode,
+                AirlineId = airlineId 
             };
 
             try
@@ -104,23 +108,36 @@ namespace PortHub.Api.Controllers
             {
                 return Conflict(new { code = "DUPLICATE_SLOT", message = ex.Message });
             }
+            catch (ArgumentException ex)
+            {
+                 return BadRequest(new { code = "INVALID_DATA", message = ex.Message });
+            }
         }
 
         [HttpPost("confirm/{id:int}")]
         [RequireApiKey]
         [ProducesResponseType(typeof(ResponseSlotDto), 200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(403)] 
         [ProducesResponseType(404)]
         public IActionResult Confirm(int id)
         {
             try
             {
-                var confirmed = _slotService.ConfirmSlot(id);
+                
+                var airlineId = (int)HttpContext.Items["AirlineId"]!;
+                
+                
+                var confirmed = _slotService.ConfirmSlot(id, airlineId);
                 return Ok(ToDto(confirmed));
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { code = "NOT_FOUND", message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex) 
+            {
+                return StatusCode(403, new { code = "FORBIDDEN", message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
@@ -131,17 +148,26 @@ namespace PortHub.Api.Controllers
         [HttpPost("cancel/{id:int}")]
         [RequireApiKey]
         [ProducesResponseType(typeof(ResponseSlotDto), 200)]
+        [ProducesResponseType(403)] 
         [ProducesResponseType(404)]
         public IActionResult Cancel(int id)
         {
             try
             {
-                var canceled = _slotService.CancelSlot(id);
+                
+                var airlineId = (int)HttpContext.Items["AirlineId"]!;
+
+                
+                var canceled = _slotService.CancelSlot(id, airlineId);
                 return Ok(ToDto(canceled));
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { code = "NOT_FOUND", message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex) 
+            {
+                return StatusCode(403, new { code = "FORBIDDEN", message = ex.Message });
             }
         }
     }

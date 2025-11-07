@@ -11,7 +11,7 @@ namespace PortHub.Api.Interfaces
         
         // Métodos para integración con aerolínea
         Slot ReserveSlot(Slot slot);
-        Slot ConfirmSlot(int id);
-        Slot CancelSlot(int id);
+        Slot ConfirmSlot(int id, int airlineId);
+        Slot CancelSlot(int id, int airlineId);
     }
 }
