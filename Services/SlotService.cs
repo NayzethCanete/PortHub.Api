@@ -13,8 +13,17 @@ namespace PortHub.Api.Services
         private readonly SlotReservationOptions _reservationOptions;
         private readonly ILogger<SlotService> _logger;
 
+        // Lista de pistas válidas permitidas en el aeropuerto
+        private static readonly HashSet<string> _validRunways = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Pista 1",
+            "Pista 2",
+            "Pista 3"
+          
+        };
+
         public SlotService(
-            AppDbContext context, 
+            AppDbContext context,
             IOptions<SlotReservationOptions> reservationOptions,
             ILogger<SlotService> logger)
         {
@@ -25,7 +34,6 @@ namespace PortHub.Api.Services
 
         public IEnumerable<Slot> GetAll()
         {
-            // Limpiar expirados antes de devolver la lista
             CleanupExpiredReservations();
             return _context.Slots.ToList();
         }
@@ -33,32 +41,23 @@ namespace PortHub.Api.Services
         public Slot? GetById(int id)
         {
             var slot = _context.Slots.FirstOrDefault(s => s.Id == id);
-            
-            // Si el slot está reservado y expiró, liberarlo
+
             if (slot != null && IsReservationExpired(slot))
             {
                 slot.Status = "Libre";
                 slot.ReservationExpiresAt = null;
                 _context.SaveChanges();
-                
-                _logger.LogInformation(
-                    "Slot {SlotId} liberado por timeout al consultarlo",
-                    slot.Id
-                );
+
+                _logger.LogInformation("Slot {SlotId} liberado por timeout al consultarlo", slot.Id);
             }
-            
+
             return slot;
         }
-
-        /* * El método Add(Slot slot) se elimina según nuestra conversación anterior 
-         * para usar ReserveSlot como el único método de creación.
-         */
 
         public Slot? Update(Slot slot, int id)
         {
             var existing = _context.Slots.FirstOrDefault(s => s.Id == id);
-            if (existing == null)
-                return null;
+            if (existing == null) return null;
 
             existing.ScheduleTime = slot.ScheduleTime;
             existing.Runway = slot.Runway;
@@ -80,66 +79,60 @@ namespace PortHub.Api.Services
             return true;
         }
 
-        /**
-         * Lógica de Reserva actualizada:
-         * 1. Busca si ya existe un slot para esa hora/pista.
-         * 2. Si existe:
-         * - Si está "Reservado" o "Confirmado", lanza error de conflicto.
-         * - Si está "Libre", lo REUTILIZA y actualiza a "Reservado".
-         * 3. Si no existe, CREA uno nuevo y lo pone como "Reservado".
-         */
         public Slot ReserveSlot(Slot slot)
         {
-            // 1. Buscar si ya existe CUALQUIER slot para esta combinación
-            var existingSlot = _context.Slots.FirstOrDefault(s => 
-                s.ScheduleTime == slot.ScheduleTime && 
+            // VALIDACIÓN DE PISTA
+            if (!_validRunways.Contains(slot.Runway))
+            {
+                throw new ArgumentException($"La pista '{slot.Runway}' no es válida. Pistas permitidas: {string.Join(", ", _validRunways)}");
+            }
+
+            // ASIGNACIÓN AUTOMÁTICA DE GATE (si no se especifica)
+            if (slot.GateId == null || slot.GateId == 0)
+            {
+                var autoGateId = FindAvailableGateId(slot.ScheduleTime);
+                if (autoGateId == null)
+                {
+                    throw new InvalidOperationException("No hay gates disponibles automáticamente para este horario (+/- 60min).");
+                }
+                slot.GateId = autoGateId;
+                _logger.LogInformation("Gate {GateId} asignada automáticamente al slot solicitado para {Time}", autoGateId, slot.ScheduleTime);
+            }
+
+            // 3. LÓGICA DE RESERVA (verificar duplicados)
+            var existingSlot = _context.Slots.FirstOrDefault(s =>
+                s.ScheduleTime == slot.ScheduleTime &&
                 s.Runway == slot.Runway);
 
             if (existingSlot != null)
             {
-                // 2. Si existe, revisar su estado
                 if (existingSlot.Status == "Confirmado" || existingSlot.Status == "Reservado")
                 {
-                    // Conflicto real: Ya está ocupado
-                    throw new InvalidOperationException(
-                        "Ya existe un slot reservado o confirmado para ese horario y pista"
-                    );
+                    throw new InvalidOperationException("Ya existe un slot reservado o confirmado para ese horario y pista");
                 }
 
-                // 3. ¡El slot existe pero está "Libre"! Lo reutilizamos.
+                // Reutilizar slot Libre
                 existingSlot.Status = "Reservado";
                 existingSlot.ReservationExpiresAt = DateTime.UtcNow.AddMinutes(_reservationOptions.TimeoutMinutes);
-                existingSlot.GateId = slot.GateId; // Actualizar datos
-                existingSlot.FlightCode = slot.FlightCode; // Actualizar datos
-                
-                _context.Slots.Update(existingSlot); // Usar Update, NO Add
+                existingSlot.GateId = slot.GateId;
+                existingSlot.FlightCode = slot.FlightCode;
+
+                _context.Slots.Update(existingSlot);
                 _context.SaveChanges();
 
-                _logger.LogInformation(
-                    "Slot {SlotId} REUTILIZADO y reservado. Expira en {Minutes} minutos ({ExpiryTime})",
-                    existingSlot.Id,
-                    _reservationOptions.TimeoutMinutes,
-                    existingSlot.ReservationExpiresAt
-                );
-                
+                _logger.LogInformation("Slot {SlotId} REUTILIZADO y reservado con Gate {GateId}.", existingSlot.Id, existingSlot.GateId);
                 return existingSlot;
             }
             else
             {
-                // 4. El slot no existe en absoluto. Es uno nuevo.
+                // Crear nuevo slot
                 slot.Status = "Reservado";
                 slot.ReservationExpiresAt = DateTime.UtcNow.AddMinutes(_reservationOptions.TimeoutMinutes);
-                
-                _context.Slots.Add(slot); // Usar Add
+
+                _context.Slots.Add(slot);
                 _context.SaveChanges();
 
-                _logger.LogInformation(
-                    "Slot {SlotId} CREADO y reservado. Expira en {Minutes} minutos ({ExpiryTime})",
-                    slot.Id,
-                    _reservationOptions.TimeoutMinutes,
-                    slot.ReservationExpiresAt
-                );
-
+                _logger.LogInformation("Slot {SlotId} CREADO y reservado con Gate {GateId}.", slot.Id, slot.GateId);
                 return slot;
             }
         }
@@ -149,34 +142,24 @@ namespace PortHub.Api.Services
             var slot = _context.Slots.FirstOrDefault(s => s.Id == id)
                 ?? throw new KeyNotFoundException($"Slot {id} no encontrado");
 
-            // Verificar si expiró
             if (IsReservationExpired(slot))
             {
                 slot.Status = "Libre";
                 slot.ReservationExpiresAt = null;
                 _context.SaveChanges();
-                
-                throw new InvalidOperationException(
-                    $"El slot {id} expiró. Ya fue liberado automáticamente"
-                );
+                throw new InvalidOperationException($"El slot {id} expiró. Ya fue liberado automáticamente");
             }
 
             if (slot.Status != "Reservado")
             {
-                throw new InvalidOperationException(
-                    $"Solo se pueden confirmar slots en estado 'Reservado'. Estado actual: {slot.Status}"
-                );
+                throw new InvalidOperationException($"Solo se pueden confirmar slots en estado 'Reservado'. Estado actual: {slot.Status}");
             }
 
             slot.Status = "Confirmado";
-            slot.ReservationExpiresAt = null; // Eliminar timeout
-            
-            _context.SaveChanges();
+            slot.ReservationExpiresAt = null;
 
-            _logger.LogInformation(
-                "Slot {SlotId} confirmado exitosamente",
-                slot.Id
-            );
+            _context.SaveChanges();
+            _logger.LogInformation("Slot {SlotId} confirmado exitosamente", slot.Id);
 
             return slot;
         }
@@ -188,13 +171,9 @@ namespace PortHub.Api.Services
 
             slot.Status = "Libre";
             slot.ReservationExpiresAt = null;
-            
-            _context.SaveChanges();
 
-            _logger.LogInformation(
-                "Slot {SlotId} cancelado/liberado",
-                slot.Id
-            );
+            _context.SaveChanges();
+            _logger.LogInformation("Slot {SlotId} cancelado/liberado", slot.Id);
 
             return slot;
         }
@@ -210,11 +189,7 @@ namespace PortHub.Api.Services
         {
             var now = DateTime.UtcNow;
             var expiredSlots = _context.Slots
-                .Where(s => 
-                    s.Status == "Reservado" && 
-                    s.ReservationExpiresAt != null && 
-                    s.ReservationExpiresAt < now
-                )
+                .Where(s => s.Status == "Reservado" && s.ReservationExpiresAt != null && s.ReservationExpiresAt < now)
                 .ToList();
 
             if (expiredSlots.Any())
@@ -224,14 +199,30 @@ namespace PortHub.Api.Services
                     slot.Status = "Libre";
                     slot.ReservationExpiresAt = null;
                 }
-                
                 _context.SaveChanges();
-                
-                _logger.LogInformation(
-                    "Limpiados {Count} slots expirados",
-                    expiredSlots.Count
-                );
+                _logger.LogInformation("Limpiados {Count} slots expirados", expiredSlots.Count);
             }
+        }
+
+        private int? FindAvailableGateId(DateTime scheduleTime)
+        {
+            var buffer = TimeSpan.FromMinutes(60);
+            var start = scheduleTime.Subtract(buffer);
+            var end = scheduleTime.Add(buffer);
+
+            var occupiedGateIds = _context.Slots
+                .Where(s => (s.Status == "Reservado" || s.Status == "Confirmado")
+                            && s.GateId != null
+                            && s.ScheduleTime >= start && s.ScheduleTime <= end)
+                .Select(s => s.GateId!.Value)
+                .Distinct()
+                .ToList();
+
+            var availableGate = _context.Gates
+                .Where(g => !occupiedGateIds.Contains(g.Id))
+                .FirstOrDefault();
+
+            return availableGate?.Id;
         }
     }
 }
