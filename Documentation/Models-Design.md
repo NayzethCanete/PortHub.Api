@@ -1,76 +1,72 @@
-# Diseño del Modelo de Datos — PortHub (API Aeropuerto)
+# Diseño del Modelo de Datos — PortHub
 
-## Descripcion:
- Este documento que describe las entidades del dominio, atributos, relaciones y restricciones que se implementarán con Entity Framework Core (Fluent API + Data Annotations).
+## Descripción
+Este documento describe el modelo de datos actual implementado en la API PortHub, incluyendo entidades, atributos clave, relaciones y consideraciones de implementación con Entity Framework Core.
 
-
+---
 
 ## Entidades
 
-## Airline
-Representa una compañía aérea que opera en el aeropuerto.
+### Airline
+Representa una aerolínea registrada que opera en el aeropuerto.
+*Referencia: `PortHub.Api/Models/Airline.cs`*
 
-- `id`: INT (PK)
-- `nombre`: VARCHAR(100)
-- `codigo`: INT
-- `pais`:  VARCHAR(50)
-- `direccion_base`: VARCHAR(200)
+- `Id`: INT (PK, Identity)
+- `Name`: STRING (Requerido)
+- `Code`: STRING (Requerido, Único)
+- `Country`: STRING (Opcional)
+- `BaseAddress`: STRING (Opcional)
+- `ApiUrl`: STRING (Opcional) - *Base URL para integración saliente (validación de tickets).*
+- `ApiKey`: STRING (Opcional) - *Clave para autenticarse contra la API de la aerolínea.*
 
-## Flight
-Representa una operación aérea programada.
+### Slot
+Representa una franja horaria y pista asignada a una operación de vuelo (aterrizaje/despegue).
+*Referencia: `PortHub.Api/Models/Slot.cs`*
 
-- `id`: INT (PK)
-- `codigo_vuelo`: VARCHAR(50)
-- `aerolinea_id`: INT (FK)
-- `fecha_hora_programada`: DATETIME
-- `slot_id`: INT (FK)
+- `Id`: INT (PK, Identity)
+- `ScheduleTime`: DATETIME (Requerido) - *Horario programado de la operación.*
+- `Runway`: STRING (Requerido) - *Identificador de la pista asignada (ej. "Pista 1").*
+- `Status`: STRING (Requerido, Default: "Reservado") - *Estados: Reservado, Confirmado, Libre.*
+- `FlightCode`: STRING (Opcional) - *Código del vuelo asociado (ej. AR1234).*
+- `GateId`: INT? (FK, Opcional) - *Referencia a la puerta de embarque asignada.*
+- `ReservationExpiresAt`: DATETIME? (Opcional) - *Marca de tiempo para expiración automática de reservas temporales.*
+- *(Recomendado)* `AirlineId`: INT? (FK) - *Vínculo con la aerolínea propietaria de la operación.*
 
-## Slot
-Franja horaria asignada a un vuelo.
+### Gate
+Representa una puerta de embarque física en la terminal.
+*Referencia: `PortHub.Api/Models/Gate.cs`*
 
-- `id`: INT (PK)
-- `fecha_hora`: DATETIME
-- `pista`: INT
-- `gate_id`: INT (FK)
-- `estado`: VARCHAR(20)
+- `Id`: INT (PK, Identity)
+- `Name`: STRING (Opcional) - *Nombre visible (ej. "Puerta 5A").*
+- `Location`: STRING (Opcional) - *Ubicación en la terminal (ej. "Terminal B, Ala Norte").*
 
-## Gate
-Puerta de embarque.
+### Boarding
+Registro individual del embarque de un pasajero (trazabilidad de seguridad).
+*Referencia: `PortHub.Api/Models/Boarding.cs`*
 
-- `id`: INT (PK)
-- `nombre`: VARCHAR(20)
-- `ubicacion`: VARCHAR(50)
+- `Id`: INT (PK, Identity)
+- `TicketNumber`: STRING (Requerido) - *Identificador único del ticket del pasajero.*
+- `FlightCode`: STRING (Requerido) - *Vuelo al que abordó.*
+- `BoardingTime`: DATETIME (Requerido) - *Momento exacto del cruce por puerta.*
+- `GateId`: INT (FK, Requerido) - *Puerta física utilizada para el embarque.*
+- `SlotId`: INT? (FK, Opcional) - *Vínculo con la operación aérea específica.*
 
-## Ticket
-Identificador del pasajero para un vuelo.
+---
 
-- `id`: INT (PK)
-- `vuelo_id`: INT (FK)
-- `pasajero_nombre`: VARCHAR(50)
-- `validado`: BOOLEAN
+## Relaciones del Dominio
 
-## Boarding
-Registro de acceso del pasajero.
+| Entidad Origen | Relación | Entidad Destino | Descripción |
+| :--- | :---: | :--- | :--- |
+| **Slot** | N:1 | **Gate** | Un slot puede tener asignada una única puerta (opcional). |
+| **Slot** | 1:N | **Boarding** | Una operación de slot tiene múltiples registros de pasajeros embarcados. |
+| **Gate** | 1:N | **Boarding** | Una puerta registra históricamente muchos embarques. |
+| **Gate** | 1:N | **Slot** | Una puerta es reutilizada por diferentes slots en distintos horarios. |
 
-- `id`: INT (PK)
-- `ticket_id`: INT (FK)
-- `gate_id`: INT (FK)
-- `hora_acceso`: DATETIME
+---
 
-## Relaciones
+## Notas de Implementación (EF Core)
 
-- Una aerolínea tiene muchos vuelos.
-- Un vuelo tiene un slot y muchos tickets.
-- Un slot se asigna a un solo vuelo.
-- Un gate puede estar en muchos slots y embarques.
-- Un ticket puede tener un solo embarque.
+1. **Integración de Entidades:** Se han simplificado las entidades teóricas `Flight` y `Ticket`, integrando sus identificadores clave (`FlightCode` y `TicketNumber`) directamente en las tablas transaccionales (`Slot` y `Boarding`) para agilizar la operación y reducir la complejidad del esquema en esta fase.
 
-
-## Notas implementacion en EF Core 
-
-- Usar HasIndex(...).IsUnique() para garantizar que no se repitan fecha_hora + pista en Slot.
-- Usar HasOne(...).WithMany(...) para relaciones 1:N.
-- Usar HasOne(...).WithOne(...) para relaciones 1:1 como Vuelo → Slot.
-- Validar integridad referencial con OnDelete(DeleteBehavior.Restrict) donde sea necesario.
-
-
+2. **Validación de Unicidad (Business Logic):**
+   - La regla de negocio *"No puede existir más de un Slot activo para la misma combinación de `ScheduleTime` + `Runway`"* es garantizada actualmente por la lógica de servicio (`SlotService.ReserveSlot`).
