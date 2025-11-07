@@ -1,36 +1,33 @@
-
 using System.ComponentModel.DataAnnotations;
-namespace PortHub.Api.Dtos;
 
-public record BoardingRequestDto(
-    string TicketNumber,
-    int SlotId,
-    long GateId,
-    int FlightCode
-);
-
-public record BoardingResponseDto(
-    long Id,
-    string TicketNumber,
-    long GateId,
-    DateTime AccessTime,
-    bool Validated
-);
-
-public record BoardingValidateRequestDto(
-    string TicketNumber,
-    int SlotId
-);
-
-public class RequestBoardingDto
+namespace PortHub.Api.Dtos
 {
-    //[Required]
-    public string? TicketNumber { get; set; }
+    public record RequestBoardingDto(
+        [Required] int FlightId, 
+        [Required] string PassengerName,
+        [Required] string Seat,
+        [Required] string TicketNumber 
+    );
 
-//[Required]
-    public string? FlightCode { get; set; }
+    public record ResponseBoardingDto(
+        int Id,
+        int FlightId,
+        string PassengerName,
+        string Seat,
+        string Status
+    );
 
-//    [Required]
-    public int GateId { get; set; }
+     public record BoardingRegistrationRequest(
+        string TicketNumber,
+        int GateId,
+        string FlightCode
+    );
+
+    public record BoardingRegistrationResponse(
+        bool Success,
+        string Message,
+        DateTime AccessTime,
+        string Gate,
+        string FlightCode
+    );
 }
-    

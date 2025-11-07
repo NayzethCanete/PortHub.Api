@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortHub.Api.Data;
 
@@ -11,9 +12,11 @@ using PortHub.Api.Data;
 namespace PortHub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251107031741_AddSlotReservationExpiry")]
+    partial class AddSlotReservationExpiry
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,38 +88,20 @@ namespace PortHub.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BoardingId"));
 
-                    b.Property<DateTime>("BoardingTime")
+                    b.Property<DateTime>("AccessTime")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("FlightCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("GateId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PassengerName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Seat")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("SlotId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TicketNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("BoardingId");
+                    b.Property<bool>("Validation")
+                        .HasColumnType("bit");
 
-                    b.HasIndex("GateId");
+                    b.HasKey("BoardingId");
 
                     b.HasIndex("SlotId");
 
@@ -260,19 +245,11 @@ namespace PortHub.Api.Migrations
 
             modelBuilder.Entity("PortHub.Api.Models.Boarding", b =>
                 {
-                    b.HasOne("PortHub.Api.Models.Gate", "Gate")
-                        .WithMany()
-                        .HasForeignKey("GateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("PortHub.Api.Models.Slot", "Slot")
                         .WithMany("Boardings")
                         .HasForeignKey("SlotId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Gate");
 
                     b.Navigation("Slot");
                 });

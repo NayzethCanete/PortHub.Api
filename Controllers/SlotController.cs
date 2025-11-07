@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 using PortHub.Api.Dtos;
-using PortHub.Api.Security; 
-//using Microsoft.AspNetCore.Authorization; // <-- Importante: Para JWT
+using PortHub.Api.Security;
 
 namespace PortHub.Api.Controllers
 {
@@ -21,18 +20,17 @@ namespace PortHub.Api.Controllers
             _slotService = slotService;
         }
 
-        
         private static ResponseSlotDto ToDto(Slot s) =>
             new(
                 s.Id,
-                s.ScheduleTime, 
+                s.ScheduleTime,
                 s.Runway,
-                s.GateId ?? 0,   
+                s.GateId ?? 0,
                 s.Status,
-                s.FlightCode
+                s.FlightCode,
+                s.ReservationExpiresAt
             );
 
-  //      [Authorize]
         [HttpGet]
         public IActionResult GetAll()
         {
@@ -40,7 +38,6 @@ namespace PortHub.Api.Controllers
             return Ok(slots);
         }
 
-    //    [Authorize] 
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
@@ -51,35 +48,6 @@ namespace PortHub.Api.Controllers
             return Ok(ToDto(slot));
         }
 
-      //  [Authorize] 
-        [HttpPost]
-        public IActionResult Add([FromBody] RequestSlotDto dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(new { code = "VALIDATION_ERROR", message = "Datos inválidos", details = ModelState });
-
-            try
-            {
-                
-                var slot = new Slot
-                {
-                    ScheduleTime = dto.Date,
-                    Runway = dto.Runway,
-                    GateId = dto.Gate_id,    
-                    Status = dto.Status,
-                    FlightCode = dto.FlightCode  
-                };
-
-                var created = _slotService.Add(slot);
-                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ToDto(created));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { code = "DUPLICATE_SLOT", message = ex.Message });
-            }
-        }
-
-       // [Authorize] 
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, [FromBody] RequestSlotDto dto)
         {
@@ -89,11 +57,11 @@ namespace PortHub.Api.Controllers
             var slot = new Slot
             {
                 Id = id,
-                ScheduleTime = dto.Date, 
+                ScheduleTime = dto.Date,
                 Runway = dto.Runway,
-                GateId = dto.Gate_id,     
+                GateId = dto.Gate_id,
                 Status = dto.Status,
-                FlightCode = dto.FlightCode 
+                FlightCode = dto.FlightCode
             };
 
             var updated = _slotService.Update(slot, id);
@@ -103,7 +71,6 @@ namespace PortHub.Api.Controllers
             return Ok(ToDto(updated));
         }
 
-        //[Authorize] 
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
@@ -114,9 +81,10 @@ namespace PortHub.Api.Controllers
             return NoContent();
         }
 
-
         [HttpPost("reserve")]
         [RequireApiKey]
+        [ProducesResponseType(typeof(ResponseSlotDto), 201)]
+        [ProducesResponseType(409)]
         public IActionResult Reserve([FromBody] RequestSlotDto dto)
         {
             var slot = new Slot
@@ -124,28 +92,25 @@ namespace PortHub.Api.Controllers
                 ScheduleTime = dto.Date,
                 Runway = dto.Runway,
                 GateId = dto.Gate_id,
-                Status = "Reservado",
                 FlightCode = dto.FlightCode
             };
 
             try
             {
-                
-                var reserved = _slotService.ReserveSlot(slot); 
-                return Ok(ToDto(reserved));
+                var reserved = _slotService.ReserveSlot(slot);
+                return CreatedAtAction(nameof(GetById), new { id = reserved.Id }, ToDto(reserved));
             }
             catch (InvalidOperationException ex)
-
             {
                 return Conflict(new { code = "DUPLICATE_SLOT", message = ex.Message });
             }
         }
-        
-        
 
         [HttpPost("confirm/{id:int}")]
         [RequireApiKey]
-
+        [ProducesResponseType(typeof(ResponseSlotDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public IActionResult Confirm(int id)
         {
             try
@@ -157,10 +122,16 @@ namespace PortHub.Api.Controllers
             {
                 return NotFound(new { code = "NOT_FOUND", message = ex.Message });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { code = "INVALID_OPERATION", message = ex.Message });
+            }
         }
 
         [HttpPost("cancel/{id:int}")]
         [RequireApiKey]
+        [ProducesResponseType(typeof(ResponseSlotDto), 200)]
+        [ProducesResponseType(404)]
         public IActionResult Cancel(int id)
         {
             try

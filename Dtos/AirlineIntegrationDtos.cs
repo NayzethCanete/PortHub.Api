@@ -1,16 +1,21 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace PortHub.Api.Dtos
 {
-    // DTO que PortHub envía a la Aerolínea para validar un ticket
     public record TicketValidationRequest(
-        [Required] int TicketNumber,
-        [Required] string FlightDate
+        string TicketNumber,
+        string FlightCode,
+        DateTime FlightDate // ✅ campo agregado y con tipo correcto
     );
-    
-    // DTO que PortHub espera de vuelta de la Aerolínea
+
     public record TicketValidationResponse(
-        [Required] bool IsValid,
-        string Message
+        bool IsValid,
+        string Message,
+        TicketDetails? Details = null
+    );
+
+    public record TicketDetails(
+        string PassengerName,
+        string FlightCode,
+        string Seat,
+        DateTime DepartureTime
     );
 }

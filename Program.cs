@@ -62,22 +62,24 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // REGISTRO DE SERVICIOS Y HTTP CLIENTS
 // ==========================================================
 
+// --- AÑADIR ESTA LÍNEA PARA PERMITIR LLAMADAS HTTP A LA API EXTERNA ---
+builder.Services.AddHttpClient(); 
+// --- FIN DE LA ADICIÓN ---
+
 builder.Services.AddScoped<IAirlineService, AirlineService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 builder.Services.AddScoped<IGateService, GateService>();
 builder.Services.AddScoped<IBoardingService, BoardingService>();
-//builder.Services.AddScoped<ITicketService, TicketService>();
+//builder.Services.AddScoped<IFlightService, FlightService>(); // Asumo que tienes este
+builder.Services.AddScoped<IAirlineIntegrationService, AirlineIntegrationService>(); // Asumo que tienes este
 
-
+builder.Services.Configure<SlotReservationOptions>(
+    builder.Configuration.GetSection("SlotReservation")
+);
 builder.Services.AddScoped<IUserService, UserService>(); 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHostedService<SlotCleanupService>();
 
-// HttpClient para AirlineIntegrationService (con configuración específica)
-builder.Services.AddHttpClient<IAirlineIntegrationService, AirlineIntegrationService>(client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(30);
-    client.DefaultRequestHeaders.Add("User-Agent", "PortHub-API/1.0");
-});
 
 
 // ==========================================================
@@ -189,7 +191,7 @@ app.MapControllers();
 
 // ===== MENSAJES DE INICIO =====
 app.Logger.LogInformation("PortHub API iniciada correctamente");
-app.Logger.LogInformation("Swagger UI: http://localhost:5000");
+// app.Logger.LogInformation("Swagger UI: http://localhost:5000"); // Asumiendo puerto 5000
 app.Logger.LogInformation("Base de datos: {ConnectionString}", 
     connectionString.Replace(connectionString.Split(';')[0], "Server=***"));
 

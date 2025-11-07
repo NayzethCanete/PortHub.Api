@@ -64,9 +64,7 @@ namespace PortHub.Api.Data
             modelBuilder.Entity<Boarding>(entity =>
             {
                 entity.HasKey(b => b.BoardingId);
-                entity.Property(b => b.AccessTime).IsRequired();
-                entity.Property(b => b.Validation).IsRequired();
-                
+            
                
                 entity.HasOne(b => b.Slot)
                       .WithMany(s => s.Boardings)

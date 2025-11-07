@@ -6,7 +6,6 @@ namespace PortHub.Api.Interfaces
     {
         IEnumerable<Slot> GetAll();
         Slot? GetById(int id);
-        Slot Add(Slot slot);
         Slot? Update(Slot slot, int id);
         bool Delete(int id);
         

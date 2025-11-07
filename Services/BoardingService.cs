@@ -1,131 +1,118 @@
-using PortHub.Api.Models;
-using PortHub.Api.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using PortHub.Api.Data;
 using PortHub.Api.Dtos;
-using Microsoft.EntityFrameworkCore;
+using PortHub.Api.Interfaces;
+using PortHub.Api.Models;
 
 namespace PortHub.Api.Services
 {
     public class BoardingService : IBoardingService
     {
         private readonly AppDbContext _context;
-        private readonly IAirlineIntegrationService _airlineIntegrationService; 
+        private readonly IAirlineIntegrationService _airlineService;
 
-        public BoardingService(AppDbContext context, IAirlineIntegrationService airlineIntegrationService)
+        public BoardingService(AppDbContext context, IAirlineIntegrationService airlineService)
         {
             _context = context;
-            _airlineIntegrationService = airlineIntegrationService;
+            _airlineService = airlineService;
         }
 
-        public IEnumerable<Boarding> GetAll()
+     
+        public async Task<BoardingRegistrationResponse> RegisterBoardingAsync(BoardingRegistrationRequest request)
         {
-            return _context.Boardings.Include(b => b.Slot).ToList();
-        }
-
-        public Boarding? GetById(int id)
-        {
-            return _context.Boardings
-                .Include(b => b.Slot)
-                .FirstOrDefault(b => b.BoardingId == id);
-        }
-
-        public Boarding Add(Boarding boarding)
-        {
-            _context.Boardings.Add(boarding);
-            _context.SaveChanges();
-            return boarding;
-        }
-
-        public Boarding? Update(Boarding boarding, int id)
-        {
-            var existing = _context.Boardings.FirstOrDefault(b => b.BoardingId == id);
-            if (existing == null)
-                return null;
-
-            existing.TicketNumber = boarding.TicketNumber; 
-            existing.SlotId = boarding.SlotId;
-            existing.AccessTime = boarding.AccessTime;
-            existing.Validation = boarding.Validation;
-
-            _context.SaveChanges();
-            return existing;
-        }
-
-        public bool Delete(int id)
-        {
-            var boarding = _context.Boardings.FirstOrDefault(b => b.BoardingId == id);
-            if (boarding == null) return false;
-
-            _context.Boardings.Remove(boarding);
-            _context.SaveChanges();
-            return true;
-        }
-
-        public async Task<(Boarding? boarding, bool success, string message)> ValidateAndRegisterBoardingAsync(
-            string ticketNumber, 
-            int slotId)
-        {
-            var slot = _context.Slots
-                .Include(s => s.Gate) 
-                .FirstOrDefault(s => s.Id == slotId);
-            
-            if (slot == null)
+            try
             {
-                return (null, false, "Slot no encontrado");
-            }
+                var gate = await _context.Gates
+                    .FirstOrDefaultAsync(g => g.Id == request.GateId);
 
-            if (slot.Status != "Confirmado")
-            {
-                return (null, false, $"El slot no está confirmado. Estado actual: {slot.Status}");
-            }
-            
-            if (string.IsNullOrEmpty(slot.FlightCode) || slot.FlightCode.Length < 2)
-            {
-                 return (null, false, "El Slot no tiene un código de vuelo válido para identificar la aerolínea.");
-            }
+                if (gate == null)
+                {
+                    return new BoardingRegistrationResponse(false, "Gate no encontrado", DateTime.UtcNow, "", request.FlightCode);
+                }
 
-            var airlineCode = slot.FlightCode.Substring(0, 2);
-            var airline = _context.Airlines.FirstOrDefault(a => a.Code == airlineCode);
-            
-            if (airline == null)
-            {
-                return (null, false, $"No se pudo identificar la aerolínea para el código de vuelo {slot.FlightCode}");
-            }
-            
-            var boardingAttempt = new Boarding
-            {
-                TicketNumber = ticketNumber,
-                SlotId = slotId,
-                AccessTime = DateTime.UtcNow,
-                Validation = false 
-            };
-            _context.Boardings.Add(boardingAttempt);
-            await _context.SaveChangesAsync();
-            
-            
-            if (!int.TryParse(ticketNumber, out int parsedTicketId))
-            {
-                boardingAttempt.Validation = false;
+                var activeSlot = await _context.Slots
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => 
+                        s.FlightCode == request.FlightCode && 
+                        s.GateId == request.GateId &&
+                        s.Status == "Confirmado"); 
+                if (activeSlot == null)
+                {
+                    return new BoardingRegistrationResponse(
+                        false,
+                        $"No hay un slot confirmado para el vuelo {request.FlightCode} en el gate {gate.Name}.",
+                        DateTime.UtcNow,
+                        gate.Name,
+                        request.FlightCode
+                    );
+                }
+
+                var validationRequest = new TicketValidationRequest(
+                    request.TicketNumber,
+                    request.FlightCode,
+                    DateTime.UtcNow
+                );
+
+                var validationResponse = await _airlineService.ValidateTicketAsync(validationRequest);
+
+                if (!validationResponse.IsValid)
+                {
+                    return new BoardingRegistrationResponse(
+                        false,
+                        $"Aerolínea rechazó el ticket: {validationResponse.Message}",
+                        DateTime.UtcNow,
+                        gate.Name,
+                        request.FlightCode
+                    );
+                }
+
+                var boarding = new Boarding
+                {
+                    SlotId = activeSlot.Id, // <--- ¡CORRECCIÓN IMPORTANTE AQUÍ!
+                    
+                    TicketNumber = request.TicketNumber,
+                    PassengerName = validationResponse.Details?.PassengerName ?? "Pasajero Verificado",
+                    Seat = validationResponse.Details?.Seat ?? "SIN ASIGNAR",
+                    Status = "Embarcado",
+                    BoardingTime = DateTime.UtcNow,
+                    GateId = gate.Id,
+                    FlightCode = request.FlightCode // Si decidiste agregar FlightCode directo a Boarding para facilitar lecturas
+                };
+
+                _context.Boardings.Add(boarding);
                 await _context.SaveChangesAsync();
-                return (boardingAttempt, false, "Formato de ticket inválido para la validación de la aerolínea.");
-            }
 
-            var flightDate = slot.ScheduleTime.ToString("yyyy-MM-dd");
-            var validationResult = await _airlineIntegrationService.ValidateTicketWithAirlineAsync(
-                parsedTicketId, 
-                flightDate, 
-                airline.ApiUrl!
-            );
-            
-            if (!validationResult.IsValid)
+                return new BoardingRegistrationResponse(
+                    true,
+                    "Embarque registrado exitosamente",
+                    boarding.BoardingTime,
+                    gate.Name,
+                    request.FlightCode
+                );
+            }
+            catch (Exception ex)
             {
-                return (boardingAttempt, false, $"Validación de aerolínea fallida: {validationResult.Message}");
+                return new BoardingRegistrationResponse(
+                    false,
+                    $"Error interno procesando embarque: {ex.Message}",
+                    DateTime.UtcNow,
+                    "",
+                    request.FlightCode
+                );
             }
-            
-            boardingAttempt.Validation = true;
-            await _context.SaveChangesAsync();
-
-            return (boardingAttempt, true, "Embarque registrado exitosamente");
         }
+
+        public async Task<IEnumerable<ResponseBoardingDto>> GetAllBoardingsAsync()
+        {
+            var boardings = await _context.Boardings.ToListAsync();
+            return boardings.Select(b => new ResponseBoardingDto(
+                b.BoardingId,
+                0, 
+                b.PassengerName,
+                b.Seat,
+                b.Status
+            ));
+        }
+
     }
 }
