@@ -18,14 +18,14 @@ public record BoardingResponseDto(
 );
 
 public record BoardingValidateRequestDto(
-    int TicketId,
+    string TicketNumber,
     int SlotId
 );
 
 public class RequestBoardingDto
 {
     //[Required]
-    public string? TicketCode { get; set; }
+    public string? TicketNumber { get; set; }
 
 //[Required]
     public string? FlightCode { get; set; }

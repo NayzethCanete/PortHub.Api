@@ -9,6 +9,7 @@ using PortHub.Api.Models;
 
 namespace PortHub.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class AirlinesController : ControllerBase
@@ -77,7 +78,7 @@ public class AirlinesController : ControllerBase
             created.Country,
             created.BaseAddress,
             created.ApiUrl,
-            created.ApiKey  // Incluir API Key solo al crear
+            created.ApiKey  
         );
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, response);

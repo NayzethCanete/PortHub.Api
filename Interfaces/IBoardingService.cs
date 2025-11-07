@@ -9,6 +9,7 @@ namespace PortHub.Api.Interfaces
         Boarding Add(Boarding boarding);
         Boarding? Update(Boarding boarding, int id);
         bool Delete(int id);
-        Task<(bool success, string message, Boarding? boarding)> ValidateAndRegisterBoardingAsync(int ticketId, int slotId);
-    }
+        Task<(Boarding? boarding, bool success, string message)> ValidateAndRegisterBoardingAsync(
+        string ticketNumber, 
+        int slotId); }
 }

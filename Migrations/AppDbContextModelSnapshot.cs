@@ -91,8 +91,9 @@ namespace PortHub.Api.Migrations
                     b.Property<int>("SlotId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
+                    b.Property<string>("TicketNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<bool>("Validation")
                         .HasColumnType("bit");
@@ -101,7 +102,7 @@ namespace PortHub.Api.Migrations
 
                     b.HasIndex("SlotId");
 
-                    b.HasIndex("TicketId", "SlotId")
+                    b.HasIndex("TicketNumber", "SlotId")
                         .IsUnique()
                         .HasDatabaseName("IX_Boardings_TicketId_SlotId");
 
@@ -211,7 +212,7 @@ namespace PortHub.Api.Migrations
                     b.ToTable("Slots");
                 });
 
-            modelBuilder.Entity("PortHub.Api.Models.Ticket", b =>
+            modelBuilder.Entity("PortHub.Api.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -219,27 +220,21 @@ namespace PortHub.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("FlightCode")
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PassengerName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Seat")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("Status")
+                    b.Property<string>("Username")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tickets");
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Boarding", b =>
@@ -250,15 +245,7 @@ namespace PortHub.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("PortHub.Api.Models.Ticket", "Ticket")
-                        .WithMany()
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Slot");
-
-                    b.Navigation("Ticket");
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Slot", b =>

@@ -1,4 +1,4 @@
-using PortHub.Api.Models;
+/*using PortHub.Api.Models;
 using PortHub.Api.Dtos;
 
 namespace PortHub.Api.Interfaces
@@ -12,4 +12,4 @@ namespace PortHub.Api.Interfaces
         bool Delete(int id);
         Task<TicketValidationResponse> ValidateTicketAsync(int ticketId, string flightDate, string airlineApiUrl);
     }
-}
+}*/

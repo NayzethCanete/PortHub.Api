@@ -12,8 +12,8 @@ using PortHub.Api.Data;
 namespace PortHub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251105145726_FixModelNullWarnings")]
-    partial class FixModelNullWarnings
+    [Migration("20251107014450_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -34,7 +34,9 @@ namespace PortHub.Api.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ApiKey")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("ApiUrl")
                         .HasColumnType("nvarchar(max)");
@@ -44,18 +46,38 @@ namespace PortHub.Api.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("Country")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ApiKey")
+                        .IsUnique();
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
                     b.ToTable("Airlines");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ApiKey = "AR_KEY_123456789ABCDEF01234",
+                            ApiUrl = "http://localhost:5241/api/airline",
+                            BaseAddress = "Buenos Aires",
+                            Code = "AR",
+                            Country = "Argentina",
+                            Name = "Aerolíneas Argentinas"
+                        });
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Boarding", b =>
@@ -72,8 +94,9 @@ namespace PortHub.Api.Migrations
                     b.Property<int>("SlotId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
+                    b.Property<string>("TicketNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<bool>("Validation")
                         .HasColumnType("bit");
@@ -82,47 +105,11 @@ namespace PortHub.Api.Migrations
 
                     b.HasIndex("SlotId");
 
-                    b.HasIndex("TicketId")
-                        .IsUnique();
+                    b.HasIndex("TicketNumber", "SlotId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Boardings_TicketId_SlotId");
 
                     b.ToTable("Boardings");
-                });
-
-            modelBuilder.Entity("PortHub.Api.Models.Flight", b =>
-                {
-                    b.Property<int>("FlightId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FlightId"));
-
-                    b.Property<int>("AirlineId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Destination")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FlightCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Origin")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("SlotId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("FlightId");
-
-                    b.HasIndex("AirlineId");
-
-                    b.ToTable("Flights");
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Gate", b =>
@@ -137,15 +124,55 @@ namespace PortHub.Api.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Location")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Gates");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            IsAvailable = true,
+                            Location = "Terminal A - Norte",
+                            Name = "A1"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            IsAvailable = true,
+                            Location = "Terminal A - Norte",
+                            Name = "A2"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            IsAvailable = true,
+                            Location = "Terminal B - Sur",
+                            Name = "B1"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            IsAvailable = true,
+                            Location = "Terminal B - Sur",
+                            Name = "B2"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            IsAvailable = true,
+                            Location = "Terminal C - Internacional",
+                            Name = "C1"
+                        });
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Slot", b =>
@@ -156,41 +183,39 @@ namespace PortHub.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("FlightId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Flight_id")
-                        .HasColumnType("int");
+                    b.Property<string>("FlightCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<int?>("GateId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("Gate_id")
-                        .HasColumnType("int");
-
                     b.Property<string>("Runway")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<DateTime>("ScheduleTime")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FlightId")
-                        .IsUnique()
-                        .HasFilter("[FlightId] IS NOT NULL");
-
                     b.HasIndex("GateId");
+
+                    b.HasIndex("ScheduleTime", "Runway")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Slots_ScheduleTime_Runway");
 
                     b.ToTable("Slots");
                 });
 
-            modelBuilder.Entity("PortHub.Api.Models.Ticket", b =>
+            modelBuilder.Entity("PortHub.Api.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -198,24 +223,21 @@ namespace PortHub.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("FlightId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PassengerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Seat")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("FlightId");
+                    b.HasIndex("Username")
+                        .IsUnique();
 
-                    b.ToTable("Tickets");
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Boarding", b =>
@@ -223,67 +245,20 @@ namespace PortHub.Api.Migrations
                     b.HasOne("PortHub.Api.Models.Slot", "Slot")
                         .WithMany("Boardings")
                         .HasForeignKey("SlotId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PortHub.Api.Models.Ticket", "Ticket")
-                        .WithOne("Boarding")
-                        .HasForeignKey("PortHub.Api.Models.Boarding", "TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Slot");
-
-                    b.Navigation("Ticket");
-                });
-
-            modelBuilder.Entity("PortHub.Api.Models.Flight", b =>
-                {
-                    b.HasOne("PortHub.Api.Models.Airline", "Airline")
-                        .WithMany("Flights")
-                        .HasForeignKey("AirlineId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Airline");
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Slot", b =>
                 {
-                    b.HasOne("PortHub.Api.Models.Flight", "Flight")
-                        .WithOne("Slot")
-                        .HasForeignKey("PortHub.Api.Models.Slot", "FlightId");
-
                     b.HasOne("PortHub.Api.Models.Gate", "Gate")
                         .WithMany("Slots")
-                        .HasForeignKey("GateId");
-
-                    b.Navigation("Flight");
+                        .HasForeignKey("GateId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Gate");
-                });
-
-            modelBuilder.Entity("PortHub.Api.Models.Ticket", b =>
-                {
-                    b.HasOne("PortHub.Api.Models.Flight", "Flight")
-                        .WithMany("Tickets")
-                        .HasForeignKey("FlightId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Flight");
-                });
-
-            modelBuilder.Entity("PortHub.Api.Models.Airline", b =>
-                {
-                    b.Navigation("Flights");
-                });
-
-            modelBuilder.Entity("PortHub.Api.Models.Flight", b =>
-                {
-                    b.Navigation("Slot");
-
-                    b.Navigation("Tickets");
                 });
 
             modelBuilder.Entity("PortHub.Api.Models.Gate", b =>
@@ -294,11 +269,6 @@ namespace PortHub.Api.Migrations
             modelBuilder.Entity("PortHub.Api.Models.Slot", b =>
                 {
                     b.Navigation("Boardings");
-                });
-
-            modelBuilder.Entity("PortHub.Api.Models.Ticket", b =>
-                {
-                    b.Navigation("Boarding");
                 });
 #pragma warning restore 612, 618
         }

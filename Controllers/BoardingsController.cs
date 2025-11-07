@@ -4,9 +4,11 @@ using PortHub.Api.Models;
 using PortHub.Api.Dtos;
 using PortHub.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization; 
 
 namespace PortHub.Api.Controllers
 {
+    [Authorize] 
     [ApiController]
     [Route("api/[controller]")]
     public class BoardingsController : ControllerBase
@@ -26,16 +28,14 @@ namespace PortHub.Api.Controllers
 
             return new BoardingResponseDto(
                 b.BoardingId,
-                b.TicketId.ToString(),
+                b.TicketNumber,
                 gateIdFromSlot,
                 b.AccessTime,
                 b.Validation
             );
         }
 
-        /// <summary>
-        /// Obtener todos los registros de embarque
-        /// </summary>
+       
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<BoardingResponseDto>), 200)]
         public IActionResult GetAll()
@@ -47,9 +47,6 @@ namespace PortHub.Api.Controllers
             return Ok(boardings.Select(ToDto));
         }
 
-        /// <summary>
-        /// Obtener un embarque por ID
-        /// </summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(BoardingResponseDto), 200)]
         [ProducesResponseType(404)]
@@ -65,16 +62,16 @@ namespace PortHub.Api.Controllers
             return Ok(ToDto(boarding));
         }
 
-        /// <summary>
-        /// ENDPOINT CRÍTICO: Registrar embarque con validación de aerolínea
-        /// </summary>
+      
         [HttpPost("validate")]
+        [AllowAnonymous] 
         [ProducesResponseType(typeof(BoardingResponseDto), 201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> ValidateAndRegister([FromBody] BoardingValidateRequestDto dto)
         {
-            var result = await _boardingService.ValidateAndRegisterBoardingAsync(dto.TicketId, dto.SlotId);
+            
+            var result = await _boardingService.ValidateAndRegisterBoardingAsync(dto.TicketNumber, dto.SlotId);
 
             if (!result.success)
             {
@@ -96,26 +93,26 @@ namespace PortHub.Api.Controllers
             );
         }
 
-        /// <summary>
-        /// Registrar embarque manualmente (sin validación - solo para testing)
-        /// </summary>
+     
         [HttpPost]
         [ProducesResponseType(typeof(BoardingResponseDto), 201)]
         [ProducesResponseType(400)]
         public IActionResult Add([FromBody] BoardingRequestDto dto)
         {
-            if (!int.TryParse(dto.TicketNumber, out int ticketId))
+            
+            if (string.IsNullOrEmpty(dto.TicketNumber))
             {
                 return BadRequest(new
                 {
                     code = "VALIDATION_ERROR",
-                    message = "El TicketNumber debe ser un número entero."
+                    message = "El TicketNumber no puede estar vacío."
                 });
             }
 
             var boarding = new Boarding
             {
-                TicketId = ticketId,
+                
+                TicketNumber = dto.TicketNumber,
                 SlotId = dto.SlotId,
                 AccessTime = DateTime.UtcNow,
                 Validation = false

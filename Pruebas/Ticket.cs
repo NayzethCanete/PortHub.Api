@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+/*using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PortHub.Api.Models
@@ -21,4 +21,4 @@ namespace PortHub.Api.Models
 
         //public virtual Boarding? Boarding { get; set; }
     }
-}
+}*/

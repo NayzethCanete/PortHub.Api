@@ -10,19 +10,20 @@ namespace PortHub.Api.Data
         public DbSet<Airline> Airlines { get; set; }
         public DbSet<Gate> Gates { get; set; }
         public DbSet<Slot> Slots { get; set; }
-        public DbSet<Ticket> Tickets { get; set; }
         public DbSet<Boarding> Boardings { get; set; }
+        public DbSet<User> Users { get; set; } 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // ===== CONFIGURACIÓN DE AIRLINES =====
+            // ===== CONFIGURACIÓN DE AIRLINES (API KEY) =====
             modelBuilder.Entity<Airline>(entity =>
             {
                 entity.HasKey(a => a.Id);
                 entity.Property(a => a.Code).IsRequired().HasMaxLength(10);
                 entity.Property(a => a.Name).IsRequired().HasMaxLength(100);
+                
                 entity.Property(a => a.ApiKey).IsRequired().HasMaxLength(100);
                 
                 // Índices únicos
@@ -38,7 +39,7 @@ namespace PortHub.Api.Data
                 entity.Property(g => g.Location).IsRequired().HasMaxLength(100);
             });
 
-            // ===== CONFIGURACIÓN DE SLOTS =====
+            // ===== CONFIGURACIÓN DE SLOTS (API KEY) =====
             modelBuilder.Entity<Slot>(entity =>
             {
                 entity.HasKey(s => s.Id);
@@ -52,48 +53,46 @@ namespace PortHub.Api.Data
                       .IsUnique()
                       .HasDatabaseName("IX_Slots_ScheduleTime_Runway");
 
-                // Gate -> Slot (One-to-Many)
+                
                 entity.HasOne(s => s.Gate)
                       .WithMany(g => g.Slots)
                       .HasForeignKey(s => s.GateId)
-                      .OnDelete(DeleteBehavior.SetNull); // Si se elimina gate, slot.GateId = null
+                      .OnDelete(DeleteBehavior.SetNull); 
             });
 
-            // ===== CONFIGURACIÓN DE TICKETS =====
-            modelBuilder.Entity<Ticket>(entity =>
-            {
-                entity.HasKey(t => t.Id);
-                entity.Property(t => t.FlightCode).IsRequired().HasMaxLength(20);
-                entity.Property(t => t.PassengerName).HasMaxLength(100);
-                entity.Property(t => t.Seat).HasMaxLength(10);
-                entity.Property(t => t.Status).IsRequired().HasMaxLength(20);
-            });
-
-            // ===== CONFIGURACIÓN DE BOARDINGS =====
+            // ===== CONFIGURACIÓN DE BOARDINGS (Trazabilidad) =====
             modelBuilder.Entity<Boarding>(entity =>
             {
                 entity.HasKey(b => b.BoardingId);
                 entity.Property(b => b.AccessTime).IsRequired();
                 entity.Property(b => b.Validation).IsRequired();
-
-                // Ticket -> Boarding (One-to-Many, NO One-to-One)
-                // Un ticket puede tener múltiples intentos de embarque
-                entity.HasOne(b => b.Ticket)
-                      .WithMany() // Sin propiedad de navegación inversa
-                      .HasForeignKey(b => b.TicketId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                // Slot -> Boarding (One-to-Many)
+                
+               
                 entity.HasOne(b => b.Slot)
                       .WithMany(s => s.Boardings)
                       .HasForeignKey(b => b.SlotId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // Índice para evitar duplicados (mismo ticket en mismo slot)
-                entity.HasIndex(b => new { b.TicketId, b.SlotId })
+                entity.HasIndex(b => new { b.TicketNumber, b.SlotId })
                       .IsUnique()
                       .HasDatabaseName("IX_Boardings_TicketId_SlotId");
             });
+            
+            // ===== CONFIGURACIÓN DE USUARIOS (JWT) =====
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(u => u.Id);
+                entity.Property(u => u.Username)
+                    .HasMaxLength(50)
+                    .IsRequired();
+                
+                entity.HasIndex(u => u.Username)
+                    .IsUnique();
+                
+                entity.Property(u => u.PasswordHash)
+                    .IsRequired();
+            });
+
 
             // ===== DATOS INICIALES (SEED) =====
             SeedData(modelBuilder);
@@ -110,7 +109,7 @@ namespace PortHub.Api.Data
                 new Gate { Id = 5, Name = "C1", Location = "Terminal C - Internacional" }
             );
 
-            // Seed Airline de prueba
+            // Seed Airline de prueba (API Key)
             modelBuilder.Entity<Airline>().HasData(
                 new Airline
                 {
