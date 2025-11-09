@@ -22,12 +22,14 @@ namespace PortHub.Api.Services
 
             if (string.IsNullOrWhiteSpace(baseUrl))
                 throw new ArgumentException("Airline API BaseUrl no está configurada.");
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("AirlineApi:ApiKey no está configurada en el .env");
 
             _httpClient.BaseAddress = new Uri(baseUrl);
             
             if (!_httpClient.DefaultRequestHeaders.Contains("X-API-KEY"))
             {
-                _httpClient.DefaultRequestHeaders.Add("X-API-KEY", apiKey ?? "ApiKeySecreta");
+                _httpClient.DefaultRequestHeaders.Add("X-API-KEY", apiKey);
             }
         }
 

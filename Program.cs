@@ -10,15 +10,24 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 
-var builder = WebApplication.CreateBuilder(args);
-
 // Cargar variables de entorno desde .env
 Env.Load();
 
-// DEFINICIÓN DEL CONNECTION STRING (IGUALMENTE SE UTILIZA .ENV)
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") 
-    ?? "Server=localhost\\SQLEXPRESS;Database=PortHubApi;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;";
+var builder = WebApplication.CreateBuilder(args);
 
+
+
+// DEFINICIÓN DEL CONNECTION STRING (IGUALMENTE SE UTILIZA .ENV)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("La variable 'ConnectionStrings__DefaultConnection' no está definida en .env");
+
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("La variable 'Jwt__Key' no está definida en .env");
+
+if (string.IsNullOrEmpty(builder.Configuration["AirlineApi:BaseUrl"]) || string.IsNullOrEmpty(builder.Configuration["AirlineApi:ApiKey"]))
+{
+    throw new InvalidOperationException("Las variables 'AirlineApi__BaseUrl' o 'AirlineApi__ApiKey' no están definidas en .env");
+}
 
 builder.Services.AddControllers();
 
@@ -62,24 +71,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // REGISTRO DE SERVICIOS Y HTTP CLIENTS
 // ==========================================================
 
-// --- AÑADIR ESTA LÍNEA PARA PERMITIR LLAMADAS HTTP A LA API EXTERNA ---
 builder.Services.AddHttpClient(); 
-// --- FIN DE LA ADICIÓN ---
-
 builder.Services.AddScoped<IAirlineService, AirlineService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 builder.Services.AddScoped<IGateService, GateService>();
 builder.Services.AddScoped<IBoardingService, BoardingService>();
-//builder.Services.AddScoped<IFlightService, FlightService>(); // Asumo que tienes este
-builder.Services.AddScoped<IAirlineIntegrationService, AirlineIntegrationService>(); // Asumo que tienes este
-
-builder.Services.Configure<SlotReservationOptions>(
-    builder.Configuration.GetSection("SlotReservation")
-);
+builder.Services.AddScoped<IAirlineIntegrationService, AirlineIntegrationService>();
 builder.Services.AddScoped<IUserService, UserService>(); 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHostedService<SlotCleanupService>();
 
+builder.Services.Configure<SlotReservationOptions>(
+    builder.Configuration.GetSection("SlotReservation")
+);
 
 
 // ==========================================================
@@ -127,10 +131,8 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "ApiKeyScheme"
     });
 
-    // Requerimientos de seguridad (para permitir probar ambos en Swagger)
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        // Requerimiento para JWT
         {
             new OpenApiSecurityScheme
             {
@@ -138,7 +140,6 @@ builder.Services.AddSwaggerGen(c =>
             },
             Array.Empty<string>()
         },
-        // Requerimiento para API Key
         {
             new OpenApiSecurityScheme
             {
@@ -169,6 +170,11 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
+//Middleware de API Key, DEBE ir ANTES de UseAuthentication/UseAuthorization 
+
+app.UseMiddleware<ApiKeyAuthMiddleware>();
+
+
 app.Use(async (context, next) => 
 {
     var auth = context.Request.Headers["Authorization"].FirstOrDefault();
@@ -179,9 +185,6 @@ app.Use(async (context, next) =>
     await next();
 });
 
-//Middleware de API Key, DEBE ir ANTES de UseAuthentication/UseAuthorization 
-
-app.UseMiddleware<ApiKeyAuthMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -191,7 +194,6 @@ app.MapControllers();
 
 // ===== MENSAJES DE INICIO =====
 app.Logger.LogInformation("PortHub API iniciada correctamente");
-// app.Logger.LogInformation("Swagger UI: http://localhost:5000"); // Asumiendo puerto 5000
 app.Logger.LogInformation("Base de datos: {ConnectionString}", 
     connectionString.Replace(connectionString.Split(';')[0], "Server=***"));
 
