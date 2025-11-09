@@ -7,7 +7,6 @@ using PortHub.Api.Security;
 
 namespace PortHub.Api.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     [Produces("application/json")]
@@ -30,14 +29,14 @@ namespace PortHub.Api.Controllers
                 s.FlightCode,
                 s.ReservationExpiresAt
             );
-
+        [Authorize]
         [HttpGet]
         public IActionResult GetAll()
         {
             var slots = _slotService.GetAll().Select(ToDto);
             return Ok(slots);
         }
-
+        [Authorize]
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
@@ -47,7 +46,7 @@ namespace PortHub.Api.Controllers
 
             return Ok(ToDto(slot));
         }
-
+        [Authorize]
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, [FromBody] RequestSlotDto dto)
         {
@@ -70,7 +69,7 @@ namespace PortHub.Api.Controllers
 
             return Ok(ToDto(updated));
         }
-
+        [Authorize]
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
         {
