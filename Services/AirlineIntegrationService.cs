@@ -16,35 +16,58 @@ namespace PortHub.Api.Services
             _httpClient = httpClient;
             _logger = logger;
 
-            var apiKey = config["AirlineApi:ApiKey"];
+            // Configuración base desde appsettings.json
             var baseUrl = config["AirlineApi:BaseUrl"];
+            var apiKey = config["AirlineApi:ApiKey"];
 
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(baseUrl))
-                throw new ArgumentException("Airline API configuration missing.");
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                throw new ArgumentException("Airline API BaseUrl no está configurada.");
 
             _httpClient.BaseAddress = new Uri(baseUrl);
-            _httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+            
+            if (!_httpClient.DefaultRequestHeaders.Contains("X-API-KEY"))
+            {
+                _httpClient.DefaultRequestHeaders.Add("X-API-KEY", apiKey ?? "ApiKeySecreta");
+            }
         }
 
         public async Task<TicketValidationResponse> ValidateTicketAsync(TicketValidationRequest request)
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync("api/tickets/validate", request);
+                var externalRequest = new ExternalTicketValidationRequest(request.TicketNumber, request.FlightCode);
 
-                if (!response.IsSuccessStatusCode)
+                var response = await _httpClient.PostAsJsonAsync("/api/ticket/validar", externalRequest);
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("Airline API responded with {StatusCode}", response.StatusCode);
-                    return new TicketValidationResponse(false, $"Error: {response.StatusCode}");
-                }
+                    bool isValid = responseContent.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
 
-                var result = await response.Content.ReadFromJsonAsync<TicketValidationResponse>();
-                return result ?? new TicketValidationResponse(false, "No se pudo leer la respuesta de la aerolínea");
+                    if (isValid)
+                    {
+                        return new TicketValidationResponse(true, "Ticket validado correctamente por la aerolínea.");
+                    }
+                    else
+                    {
+                        return new TicketValidationResponse(false, $"Respuesta inesperada de aerolínea: {responseContent}");
+                    }
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) 
+                {
+                    return new TicketValidationResponse(false, $"Ticket rechazado: {responseContent}");
+                }
+                else
+                {
+                    _logger.LogWarning("Error API Aerolínea: {StatusCode} - {Content}", response.StatusCode, responseContent);
+                    return new TicketValidationResponse(false, $"Error de comunicación con aerolínea (Código {response.StatusCode})");
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error comunicando con Airline API");
-                return new TicketValidationResponse(false, $"Excepción al validar ticket: {ex.Message}");
+                _logger.LogError(ex, "Excepción conectando con Airline API");
+                return new TicketValidationResponse(false, $"Error interno de integración: {ex.Message}");
             }
         }
     }
