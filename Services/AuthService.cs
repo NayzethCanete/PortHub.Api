@@ -31,12 +31,12 @@ public class AuthService : IAuthService
             new(JwtRegisteredClaimNames.UniqueName, createTokenDto.Username)
         };
 
-        // --- Crear la CLAVE de firma ---
+
         // Se toma la "Key" del archivo de configuración, se pasa a bytes y se crea una SecurityKey.
         // "SymmetricSecurityKey" indica que se usará la misma clave para firmar y validar (HS256).
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
 
-        // --- Crear las CREDENCIALES ---
+       
         // Definen cómo se firmará el token (algoritmo y clave usada).
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -44,7 +44,7 @@ public class AuthService : IAuthService
         var expires = DateTime.UtcNow.AddMinutes(_options.ExpMinutes); // Fecha de expiración
         var notBefore = DateTime.UtcNow;
 
-        // --- Crear el TOKEN ---
+     
         // Se define el token con los datos necesarios.
         var token = new JwtSecurityToken(
             issuer: _options.Issuer,

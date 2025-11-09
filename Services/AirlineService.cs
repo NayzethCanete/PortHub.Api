@@ -25,7 +25,6 @@ public class AirlineService : IAirlineService
     public Airline GetById(int id)
     {
         return _context.Airlines
-           // .Include(a => a.Flights)
             .FirstOrDefault(a => a.Id == id);
     }
 
@@ -36,7 +35,7 @@ public class AirlineService : IAirlineService
 
     public Airline Add(Airline airline)
     {
-        // Generar API Key única
+        // Generar API Key única para cada aerolinea registrada 
         airline.ApiKey = GenerateApiKey(airline.Code);
         
         _context.Airlines.Add(airline);
@@ -70,8 +69,12 @@ public class AirlineService : IAirlineService
         return true;
     }
 
+
+    //Es el encargado de generar una API key unica para cada aerolinea
     private string GenerateApiKey(string code)
     {
+        //Lo que hace es que la API key tenga el formato: CODE_KEY_XXXXXXXXXXXXXX
+        //Lo genera en base a su codigo de aerolinea y un GUID unico
         var guid = Guid.NewGuid().ToString("N").ToUpper();
         return $"{code}_KEY_{guid.Substring(0, 24)}";
     }

@@ -4,6 +4,15 @@ using PortHub.Api.Interfaces;
 using PortHub.Api.Dtos;
 using Microsoft.AspNetCore.Authorization;
 
+
+
+/*
+
+Controlador de puertas de embarque
+
+*/
+
+
 namespace PortHub.Api.Controllers
 {
     [Authorize]
@@ -19,6 +28,7 @@ namespace PortHub.Api.Controllers
             _gateService = gateService;
         }
 
+        //Convierte el modelo Gate a DTO de respuesta
         private static ResponseGateDto ToDto(Gate g) =>
             new(g.Id, g.Name, g.Location);
 
@@ -82,7 +92,7 @@ namespace PortHub.Api.Controllers
             if (!deleted)
                 return NotFound(new { code = "NOT_FOUND", message = "Gate no encontrado" });
 
-            return NoContent();
+            return NoContent(); //Eliminación exitosa, sin contenido que retornar
         }
     }
 }

@@ -13,6 +13,8 @@ namespace PortHub.Api.Services
         private readonly SlotReservationOptions _reservationOptions;
         private readonly ILogger<SlotService> _logger;
 
+
+        //Establece una lista de pistas validas para reservar slots 
         private static readonly HashSet<string> _validRunways = new(StringComparer.OrdinalIgnoreCase)
         {
             "Pista 1",
@@ -30,12 +32,15 @@ namespace PortHub.Api.Services
             _logger = logger;
         }
 
+        //Obtiene los slots, pero llama al meotofd de limpieza de reservas expiradas antes
         public IEnumerable<Slot> GetAll()
         {
             CleanupExpiredReservations();
             return _context.Slots.ToList();
         }
 
+
+        //Llama al metodo de limpieza de reservas expiradas antes de devolver el slot solicitado
         public Slot? GetById(int id)
         {
             var slot = _context.Slots.FirstOrDefault(s => s.Id == id);
@@ -77,6 +82,9 @@ namespace PortHub.Api.Services
             return true;
         }
 
+
+        //Es el metodo principal que va a reservar un slot 
+        //Crea o reutiliza un slot segun corresponda
         public Slot ReserveSlot(Slot slot)
         {
             if (!_validRunways.Contains(slot.Runway))
@@ -84,6 +92,8 @@ namespace PortHub.Api.Services
                 throw new ArgumentException($"La pista '{slot.Runway}' no es válida. Pistas permitidas: {string.Join(", ", _validRunways)}");
             }
 
+
+            //En caso de que la aerolinea no haya especificado un gate, se le asigna uno automaticamente
             if (slot.GateId == null || slot.GateId == 0)
             {
                 var autoGateId = FindAvailableGateId(slot.ScheduleTime);
@@ -95,12 +105,15 @@ namespace PortHub.Api.Services
                 _logger.LogInformation("Gate {GateId} asignada automáticamente.", autoGateId);
             }
 
+            //Se fija si ya existe un slot para la misma fecha y pista
             var existingSlot = _context.Slots.FirstOrDefault(s =>
                 s.ScheduleTime == slot.ScheduleTime &&
                 s.Runway == slot.Runway);
 
             if (existingSlot != null)
             {
+
+                //Es el encargado de evitar doble reserva
                 if (existingSlot.Status == "Confirmado" || existingSlot.Status == "Reservado")
                 {
                     throw new InvalidOperationException("Ya existe un slot reservado o confirmado para ese horario y pista");
@@ -112,9 +125,9 @@ namespace PortHub.Api.Services
                 existingSlot.GateId = slot.GateId;
                 existingSlot.FlightCode = slot.FlightCode;
                 existingSlot.AirlineId = slot.AirlineId; // Actualizamos el dueño al nuevo solicitante
-                
+
                 existingSlot.AirlineId = slot.AirlineId; // Actualizamos el dueño al nuevo solicitante
-               
+
                 _context.Slots.Update(existingSlot);
                 _context.SaveChanges();
 
@@ -135,6 +148,8 @@ namespace PortHub.Api.Services
             }
         }
 
+        //Va a confirmar un slot reservado definitivamente
+        //Tiene un limite de tiempo para hacerlo antes de que expire la reserva
         public Slot ConfirmSlot(int id, int requestingAirlineId)
         {
             var slot = _context.Slots.FirstOrDefault(s => s.Id == id)
@@ -167,6 +182,8 @@ namespace PortHub.Api.Services
             return slot;
         }
 
+
+        //Va a cancelar un slot reservado o confirmado, lo deja en estado libre para ser usado mas adelante 
         public Slot CancelSlot(int id, int requestingAirlineId)
         {
             var slot = _context.Slots.FirstOrDefault(s => s.Id == id)
@@ -187,6 +204,7 @@ namespace PortHub.Api.Services
             return slot;
         }
 
+        //Verifica si la reserva de un slot ha expirado
         private bool IsReservationExpired(Slot slot)
         {
             return slot.Status == "Reservado" &&
@@ -194,6 +212,7 @@ namespace PortHub.Api.Services
                    slot.ReservationExpiresAt.Value < DateTime.UtcNow;
         }
 
+        //Libera los slots que se han expirado
         private void CleanupExpiredReservations()
         {
             var now = DateTime.UtcNow;
@@ -213,6 +232,9 @@ namespace PortHub.Api.Services
             }
         }
 
+
+        //Lo que hace es que busca un gate disponible automaticamente para asignarselo a un slot
+        //Busca en un rango de  60 minutos antes y despues del horario solicitado, asi evita conflictos
         private int? FindAvailableGateId(DateTime scheduleTime)
         {
             var buffer = TimeSpan.FromMinutes(60);

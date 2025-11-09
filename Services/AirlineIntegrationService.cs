@@ -4,11 +4,26 @@ using PortHub.Api.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
+
+/*
+
+
+Es el servicio que maneja la integracion con API externa de aerolina
+Va a encargarse de validar los tickets con la aerolinea correspondiente
+
+Recibe un TicketValidationRequest y devuelve un TicketValidationResponse
+
+
+*/
+
+
+
+
 namespace PortHub.Api.Services
 {
     public class AirlineIntegrationService : IAirlineIntegrationService
     {
-        private readonly HttpClient _httpClient;
+        private readonly HttpClient _httpClient; //Client HTTP usado para  request externos 
         private readonly ILogger<AirlineIntegrationService> _logger;
 
         public AirlineIntegrationService(HttpClient httpClient, IConfiguration config, ILogger<AirlineIntegrationService> logger)
@@ -19,6 +34,9 @@ namespace PortHub.Api.Services
             // Configuración base desde appsettings.json
             var baseUrl = config["AirlineApi:BaseUrl"];
             var apiKey = config["AirlineApi:ApiKey"];
+            
+
+            //Validaciones basicas, si no estan validades lanza excepcion
 
             if (string.IsNullOrWhiteSpace(baseUrl))
                 throw new ArgumentException("Airline API BaseUrl no está configurada.");
@@ -26,13 +44,16 @@ namespace PortHub.Api.Services
                 throw new InvalidOperationException("AirlineApi:ApiKey no está configurada en el .env");
 
             _httpClient.BaseAddress = new Uri(baseUrl);
-            
+
             if (!_httpClient.DefaultRequestHeaders.Contains("X-API-KEY"))
             {
                 _httpClient.DefaultRequestHeaders.Add("X-API-KEY", apiKey);
             }
         }
 
+
+
+        //Es el metodo principal que va a validar un ticket, lo transforma y envia a la API externa
         public async Task<TicketValidationResponse> ValidateTicketAsync(TicketValidationRequest request)
         {
             try
@@ -43,7 +64,11 @@ namespace PortHub.Api.Services
 
                 var responseContent = await response.Content.ReadAsStringAsync();
 
-                if (response.IsSuccessStatusCode)
+
+
+                //Evalua en base a las respuestas posibles de la API externa
+
+                if (response.IsSuccessStatusCode) //Si es valido 
                 {
                     bool isValid = responseContent.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
 
@@ -56,18 +81,20 @@ namespace PortHub.Api.Services
                         return new TicketValidationResponse(false, $"Respuesta inesperada de aerolínea: {responseContent}");
                     }
                 }
-                else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) 
+                else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
                 {
                     return new TicketValidationResponse(false, $"Ticket rechazado: {responseContent}");
                 }
                 else
                 {
+                     //Otros posibles erroes de conexión o internos
                     _logger.LogWarning("Error API Aerolínea: {StatusCode} - {Content}", response.StatusCode, responseContent);
                     return new TicketValidationResponse(false, $"Error de comunicación con aerolínea (Código {response.StatusCode})");
                 }
             }
             catch (Exception ex)
             {
+            
                 _logger.LogError(ex, "Excepción conectando con Airline API");
                 return new TicketValidationResponse(false, $"Error interno de integración: {ex.Message}");
             }

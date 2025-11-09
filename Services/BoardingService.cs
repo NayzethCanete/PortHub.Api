@@ -21,11 +21,8 @@ namespace PortHub.Api.Services
         {
             try
             {
-                // 1. Buscar el SLOT ACTIVO para el FlightCode indicado.
-                // Filtramos por:
-                // - FlightCode: El vuelo que indica el pasajero.
-                // - Status "Confirmado": Solo se puede abordar vuelos confirmados.
-                // - Fecha de HOY: Para evitar abordar por error un vuelo de mañana con el mismo código.
+                // Buscar el SLOT ACTIVO para el FlightCode indicado.
+            
                 var activeSlot = await _context.Slots
                     .Include(s => s.Gate) // Incluimos el Gate para saber su nombre después
                     .AsNoTracking()
@@ -58,7 +55,7 @@ namespace PortHub.Api.Services
                     );
                 }
 
-                // 2. Validar Ticket con la API de la Aerolínea Externa
+                // Validar Ticket con la API de la Aerolínea Externa
                 var validationRequest = new TicketValidationRequest(request.TicketNumber, request.FlightCode);
                 var validationResponse = await _airlineService.ValidateTicketAsync(validationRequest);
 
@@ -73,7 +70,7 @@ namespace PortHub.Api.Services
                     );
                 }
 
-                // 3. Validar que NO se haya embarcado previamente (Opcional pero recomendado)
+                // valida que NO se haya embarcado previamente
                 bool alreadyBoarded = await _context.Boardings.AnyAsync(b =>
                     b.TicketNumber == request.TicketNumber &&
                     b.SlotId == activeSlot.Id);
@@ -89,12 +86,11 @@ namespace PortHub.Api.Services
                     );
                 }
 
-                // 4. Registrar el Embarque
-                // Usamos los datos que obtuvimos AUTOMÁTICAMENTE del slot activo.
+                // Registrar el Embarque
                 var boarding = new Boarding
                 {
                     SlotId = activeSlot.Id,
-                    GateId = activeSlot.GateId.Value, // ¡Aquí está la magia! Usamos el ID del Gate del slot.
+                    GateId = activeSlot.GateId.Value, 
                     TicketNumber = request.TicketNumber,
                     FlightCode = request.FlightCode,
                     BoardingTime = DateTime.UtcNow,
@@ -126,7 +122,7 @@ namespace PortHub.Api.Services
             }
         }
 
-        // ... (Resto del método GetAllBoardingsAsync igual)
+
         public async Task<IEnumerable<ResponseBoardingDto>> GetAllBoardingsAsync()
         {
             var boardings = await _context.Boardings.ToListAsync();

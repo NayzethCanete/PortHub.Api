@@ -12,9 +12,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PortHub.Api.Services
 {
-    /// <summary>
-    /// Servicio en segundo plano que limpia automáticamente slots reservados expirados
-    /// </summary>
+
+    /// Servicio en segundo plano que libera automáticamente slots reservados que expiraron.
+
     public class SlotCleanupService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
@@ -35,12 +35,12 @@ namespace PortHub.Api.Services
         {
             if (!_options.AutoCleanupEnabled)
             {
-                _logger.LogInformation("Limpieza automática de slots deshabilitada");
+                _logger.LogInformation("Limpieza automática deshabilitada.");
                 return;
             }
 
             _logger.LogInformation(
-                "Servicio de limpieza de slots iniciado. Intervalo: {Interval} minutos, Timeout: {Timeout} minutos",
+                "Servicio iniciado. Intervalo: {Interval} min, Timeout: {Timeout} min",
                 _options.CleanupIntervalMinutes,
                 _options.TimeoutMinutes
             );
@@ -53,10 +53,10 @@ namespace PortHub.Api.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error durante la limpieza de slots expirados");
+                    _logger.LogError(ex, "Error durante la limpieza de slots.");
                 }
 
-                // Esperar antes del próximo ciclo
+                // Espera el próximo ciclo
                 await Task.Delay(
                     TimeSpan.FromMinutes(_options.CleanupIntervalMinutes),
                     stoppingToken
@@ -68,35 +68,30 @@ namespace PortHub.Api.Services
         {
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
             var now = DateTime.UtcNow;
 
-            // Buscar slots reservados que ya expiraron
+            // Busca slots reservados cuyo tiempo de expiración ya pasó
             var expiredSlots = await context.Slots
-                .Where(s => 
-                    s.Status == "Reservado" && 
-                    s.ReservationExpiresAt != null && 
+                .Where(s =>
+                    s.Status == "Reservado" &&
+                    s.ReservationExpiresAt != null &&
                     s.ReservationExpiresAt < now
                 )
                 .ToListAsync();
 
             if (expiredSlots.Any())
             {
-                _logger.LogInformation(
-                    "Liberando {Count} slots expirados",
-                    expiredSlots.Count
-                );
+                _logger.LogInformation("Liberando {Count} slots expirados.", expiredSlots.Count);
 
                 foreach (var slot in expiredSlots)
                 {
                     slot.Status = "Libre";
                     slot.ReservationExpiresAt = null;
-                    
+
                     _logger.LogInformation(
-                        "Slot {SlotId} (Vuelo: {FlightCode}, Pista: {Runway}) liberado por timeout",
+                        "Slot {Id} (Vuelo: {Flight}) liberado por timeout.",
                         slot.Id,
-                        slot.FlightCode,
-                        slot.Runway
+                        slot.FlightCode
                     );
                 }
 

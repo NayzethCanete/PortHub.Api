@@ -6,11 +6,14 @@ using PortHub.Api.Common;
 using System;
 using System.Threading.Tasks;
 
+
+/*
+
+Controlador para manejar operaciones relacionadas con embarques.
+Valida pasajeros que pasan por las puertas de embarque y registra los embarques.
+*/
 namespace PortHub.Api.Controllers
 {
-
-
-
 
     [ApiController]
     [Route("api/[controller]")]
@@ -23,6 +26,9 @@ namespace PortHub.Api.Controllers
             _boardingService = boardingService;
         }
 
+
+        //Requiere el numero de ticket y el vuelo para validar el embarque
+
         [HttpPost("register")]
         [Authorize]
         public async Task<ActionResult<BoardingRegistrationResponse>> RegisterBoarding(
@@ -34,13 +40,14 @@ namespace PortHub.Api.Controllers
 
                 if (!result.Success)
                 {
-                    return BadRequest(result);
+                    return BadRequest(result); // 400 Bad Request con el mensaje de error
                 }
 
                 return Ok(result);
             }
             catch (Exception ex)
             {
+                //Error inesperado (conexion a API de aerolinea, BD, etc)
                 return StatusCode(500, new ErrorResponse("Error interno registrando embarque", ex.Message));
             }
         }

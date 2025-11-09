@@ -16,18 +16,20 @@ Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 
+builder.Configuration.AddEnvironmentVariables();
 
-// DEFINICIÓN DEL CONNECTION STRING (IGUALMENTE SE UTILIZA .ENV)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("La variable 'ConnectionStrings__DefaultConnection' no está definida en .env");
+
+var connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"]
+    ?? throw new InvalidOperationException("ConnectionStrings__DefaultConnection no está definida en .env");
 
 var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("La variable 'Jwt__Key' no está definida en .env");
+    ?? throw new InvalidOperationException("Jwt__Key no está definida en .env");
 
-if (string.IsNullOrEmpty(builder.Configuration["AirlineApi:BaseUrl"]) || string.IsNullOrEmpty(builder.Configuration["AirlineApi:ApiKey"]))
-{
-    throw new InvalidOperationException("Las variables 'AirlineApi__BaseUrl' o 'AirlineApi__ApiKey' no están definidas en .env");
-}
+var airlineApiBaseUrl = builder.Configuration["AirlineApi:BaseUrl"]
+    ?? throw new InvalidOperationException("AirlineApi__BaseUrl no está definida en .env");
+
+var airlineApiKey = builder.Configuration["AirlineApi:ApiKey"]
+    ?? throw new InvalidOperationException("AirlineApi__ApiKey no está definida en .env");
 
 builder.Services.AddControllers();
 
@@ -87,7 +89,7 @@ builder.Services.Configure<SlotReservationOptions>(
 
 
 // ==========================================================
-// 5. CONFIGURACIÓN DE CORS
+// CONFIGURACIÓN DE CORS
 // ==========================================================
 builder.Services.AddCors(options =>
 {
@@ -99,7 +101,7 @@ builder.Services.AddCors(options =>
 });
 
 // ==========================================================
-// 6. CONFIGURACIÓN DE SWAGGER (Soporte JWT y API Key)
+//  CONFIGURACIÓN DE SWAGGER (Soporte JWT y API Key)
 // ==========================================================
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -153,7 +155,7 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // ==========================================================
-// 7. CONFIGURACIÓN DEL PIPELINE HTTP (ORDEN CRÍTICO)
+// CONFIGURACIÓN DEL PIPELINE HTTP (ORDEN CRÍTICO)
 // ==========================================================
 
 if (app.Environment.IsDevelopment())

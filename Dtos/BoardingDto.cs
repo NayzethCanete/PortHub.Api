@@ -1,5 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 
+
+/*
+
+Representa los datos que el sistema devuelve  y envia para el registro de abordajes (boardings).
+
+*/
+
+
+
 namespace PortHub.Api.Dtos
 {
 

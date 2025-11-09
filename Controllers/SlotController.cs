@@ -5,6 +5,19 @@ using PortHub.Api.Models;
 using PortHub.Api.Dtos;
 using PortHub.Api.Security;
 
+
+/*
+Controlador de slots de aterrizaje y despegue
+
+Usa JWT y API key para autenticar y autorizar a los usuarios y aerolíneas.
+
+-Gestion interna: requiere JWT (GET, PUT, DELETE)
+-Integracion externa: requiere API key (POST reserve, confirm, cancel)
+
+*/
+
+
+
 namespace PortHub.Api.Controllers
 {
     [ApiController]
@@ -29,6 +42,8 @@ namespace PortHub.Api.Controllers
                 s.FlightCode,
                 s.ReservationExpiresAt
             );
+
+
         [Authorize]
         [HttpGet]
         public IActionResult GetAll()
@@ -36,6 +51,9 @@ namespace PortHub.Api.Controllers
             var slots = _slotService.GetAll().Select(ToDto);
             return Ok(slots);
         }
+
+
+
         [Authorize]
         [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
@@ -46,6 +64,9 @@ namespace PortHub.Api.Controllers
 
             return Ok(ToDto(slot));
         }
+
+
+
         [Authorize]
         [HttpPut("{id:int}")]
         public IActionResult Update(int id, [FromBody] RequestSlotDto dto)
@@ -69,6 +90,9 @@ namespace PortHub.Api.Controllers
 
             return Ok(ToDto(updated));
         }
+
+
+
         [Authorize]
         [HttpDelete("{id:int}")]
         public IActionResult Delete(int id)
@@ -80,22 +104,24 @@ namespace PortHub.Api.Controllers
             return NoContent();
         }
 
+
+
         [HttpPost("reserve")]
         [RequireApiKey]
         [ProducesResponseType(typeof(ResponseSlotDto), 201)]
         [ProducesResponseType(409)]
         public IActionResult Reserve([FromBody] RequestSlotDto dto)
         {
-            // 1. Obtener el ID de la aerolínea autenticada
-            int? airlineId = HttpContext.Items["AirlineId"] as int?;
+            // Obtener el ID de la aerolínea autenticada
+            int? airlineId = HttpContext.Items["AirlineId"] as int?; //El ID se guardo en httpcontext en el middleware de API key
 
             var slot = new Slot
             {
                 ScheduleTime = dto.Date,
                 Runway = dto.Runway,
-                GateId = dto.Gate_id,
+                GateId = dto.Gate_id, //Es opcional en la reserva
                 FlightCode = dto.FlightCode,
-                AirlineId = airlineId 
+                AirlineId = airlineId //Marca la propeidad del slot 
             };
 
             try
@@ -109,24 +135,29 @@ namespace PortHub.Api.Controllers
             }
             catch (ArgumentException ex)
             {
-                 return BadRequest(new { code = "INVALID_DATA", message = ex.Message });
+                return BadRequest(new { code = "INVALID_DATA", message = ex.Message });
             }
         }
+
+
+        //Se encarga de confirmar un slot reservado definitivamente. 
+        //Tiene un limite de tiempo para hacerlo antes de que expire la reserva.
+
 
         [HttpPost("confirm/{id:int}")]
         [RequireApiKey]
         [ProducesResponseType(typeof(ResponseSlotDto), 200)]
         [ProducesResponseType(400)]
-        [ProducesResponseType(403)] 
+        [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public IActionResult Confirm(int id)
         {
             try
             {
-                
+                //Solo la aerolinea que reservo el slot puede confirmarlo
                 var airlineId = (int)HttpContext.Items["AirlineId"]!;
-                
-                
+
+
                 var confirmed = _slotService.ConfirmSlot(id, airlineId);
                 return Ok(ToDto(confirmed));
             }
@@ -134,7 +165,7 @@ namespace PortHub.Api.Controllers
             {
                 return NotFound(new { code = "NOT_FOUND", message = ex.Message });
             }
-            catch (UnauthorizedAccessException ex) 
+            catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(403, new { code = "FORBIDDEN", message = ex.Message });
             }
@@ -144,19 +175,22 @@ namespace PortHub.Api.Controllers
             }
         }
 
+        //Cancela un slot reservado o confirmado
+        //La aerolinea que lo reservo o confirmo es la unica que puede cancelarlo
+
         [HttpPost("cancel/{id:int}")]
         [RequireApiKey]
         [ProducesResponseType(typeof(ResponseSlotDto), 200)]
-        [ProducesResponseType(403)] 
+        [ProducesResponseType(403)]
         [ProducesResponseType(404)]
         public IActionResult Cancel(int id)
         {
             try
             {
-                
+
                 var airlineId = (int)HttpContext.Items["AirlineId"]!;
 
-                
+
                 var canceled = _slotService.CancelSlot(id, airlineId);
                 return Ok(ToDto(canceled));
             }
@@ -164,7 +198,7 @@ namespace PortHub.Api.Controllers
             {
                 return NotFound(new { code = "NOT_FOUND", message = ex.Message });
             }
-            catch (UnauthorizedAccessException ex) 
+            catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(403, new { code = "FORBIDDEN", message = ex.Message });
             }

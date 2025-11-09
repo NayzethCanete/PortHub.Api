@@ -7,12 +7,15 @@ namespace PortHub.Api.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+        // Definición de DbSets para las entidades, son las tablas en la base de datos
         public DbSet<Airline> Airlines { get; set; }
         public DbSet<Gate> Gates { get; set; }
         public DbSet<Slot> Slots { get; set; }
         public DbSet<Boarding> Boardings { get; set; }
-        public DbSet<User> Users { get; set; } 
+        public DbSet<User> Users { get; set; }
 
+        //Se usa cuando se crea el modelo de datos
+        //Se definen restricciones, relaciones y datos iniciales (seed)
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -23,9 +26,9 @@ namespace PortHub.Api.Data
                 entity.HasKey(a => a.Id);
                 entity.Property(a => a.Code).IsRequired().HasMaxLength(10);
                 entity.Property(a => a.Name).IsRequired().HasMaxLength(100);
-                
+
                 entity.Property(a => a.ApiKey).IsRequired().HasMaxLength(100);
-                
+
                 // Índices únicos
                 entity.HasIndex(a => a.Code).IsUnique();
                 entity.HasIndex(a => a.ApiKey).IsUnique();
@@ -39,7 +42,7 @@ namespace PortHub.Api.Data
                 entity.Property(g => g.Location).IsRequired().HasMaxLength(100);
             });
 
-            // ===== CONFIGURACIÓN DE SLOTS (API KEY) =====
+            // ===== CONFIGURACIÓN DE SLOTS =====
             modelBuilder.Entity<Slot>(entity =>
             {
                 entity.HasKey(s => s.Id);
@@ -48,24 +51,24 @@ namespace PortHub.Api.Data
                 entity.Property(s => s.Status).IsRequired().HasMaxLength(20);
                 entity.Property(s => s.FlightCode).IsRequired().HasMaxLength(20);
 
-                // CONSTRAINT CRÍTICO: No puede haber dos slots con mismo horario y pista
+                // No puede haber dos slots con mismo horario y pista
                 entity.HasIndex(s => new { s.ScheduleTime, s.Runway })
                       .IsUnique()
                       .HasDatabaseName("IX_Slots_ScheduleTime_Runway");
 
-                
+
                 entity.HasOne(s => s.Gate)
                       .WithMany(g => g.Slots)
                       .HasForeignKey(s => s.GateId)
-                      .OnDelete(DeleteBehavior.SetNull); 
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ===== CONFIGURACIÓN DE BOARDINGS (Trazabilidad) =====
+            // ===== CONFIGURACIÓN DE BOARDINGS  =====
             modelBuilder.Entity<Boarding>(entity =>
             {
                 entity.HasKey(b => b.BoardingId);
-            
-               
+
+
                 entity.HasOne(b => b.Slot)
                       .WithMany(s => s.Boardings)
                       .HasForeignKey(b => b.SlotId)
@@ -75,7 +78,7 @@ namespace PortHub.Api.Data
                       .IsUnique()
                       .HasDatabaseName("IX_Boardings_TicketId_SlotId");
             });
-            
+
             // ===== CONFIGURACIÓN DE USUARIOS (JWT) =====
             modelBuilder.Entity<User>(entity =>
             {
@@ -83,10 +86,10 @@ namespace PortHub.Api.Data
                 entity.Property(u => u.Username)
                     .HasMaxLength(50)
                     .IsRequired();
-                
+
                 entity.HasIndex(u => u.Username)
                     .IsUnique();
-                
+
                 entity.Property(u => u.PasswordHash)
                     .IsRequired();
             });
@@ -96,6 +99,7 @@ namespace PortHub.Api.Data
             SeedData(modelBuilder);
         }
 
+        //Cargamos datos iniciales en la base de datos, como gates y una airline de prueba
         private void SeedData(ModelBuilder modelBuilder)
         {
             // Seed Gates
