@@ -4,7 +4,7 @@ namespace PortHub.Api.Dtos;
 //Para la solicitud de login
 
 public record LoginDto(
-    tring Username,
+    string Username,
     string Password);
 public record LoginResponseDto(
     string Token,
