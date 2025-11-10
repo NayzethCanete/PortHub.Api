@@ -7,11 +7,20 @@ using PortHub.Api.Dtos;
 using PortHub.Api.Interfaces;
 using PortHub.Api.Models;
 
+
+/*
+Controlador de aerolíneas que maneja operaciones CRUD para aerolíneas.
+Proporciona endpoints para obtener, crear, actualizar y eliminar aerolíneas.
+Utiliza autorización JWT para proteger los endpoints.
+*/
+
+
+
 namespace PortHub.Api.Controllers;
 
-[Authorize]
+[Authorize] //Requiere autorización JWT para todos los endpoint 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]")] //Ruta base: /api/airlines
 public class AirlinesController : ControllerBase
 {
     private readonly IAirlineService _airlineService;
@@ -25,6 +34,9 @@ public class AirlinesController : ControllerBase
     public IActionResult GetAll()
     {
         var airlines = _airlineService.GetAll();
+
+        //Transformar a DTOs de respuesta, para ocultar informacion sensible 
+
         var response = airlines.Select(a => new AirlineResponseDto(
             a.Id,
             a.Name,
@@ -54,6 +66,10 @@ public class AirlinesController : ControllerBase
         return Ok(response);
     }
 
+
+
+    //Registra una nueva aerolínea
+    //Va a crear una API key para la aerolínea
     [HttpPost]
     public IActionResult Create([FromBody] AirlineRequestDto dto)
     {
@@ -78,7 +94,7 @@ public class AirlinesController : ControllerBase
             created.Country,
             created.BaseAddress,
             created.ApiUrl,
-            created.ApiKey  
+            created.ApiKey
         );
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, response);

@@ -26,7 +26,6 @@ namespace PortHub.Api.Controllers
             _boardingService = boardingService;
         }
 
-
         //Requiere el numero de ticket y el vuelo para validar el embarque
 
         [HttpPost("register")]
@@ -45,6 +44,7 @@ namespace PortHub.Api.Controllers
 
                 return Ok(result);
             }
+
             catch (Exception ex)
             {
                 //Error inesperado (conexion a API de aerolinea, BD, etc)

@@ -20,6 +20,7 @@ namespace PortHub.Api.Security
 
         public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
         {
+            // Obtener la ruta de la solicitud
             var path = context.Request.Path.Value?.ToLower() ?? "";
 
             // Rutas públicas (Swagger, etc.)

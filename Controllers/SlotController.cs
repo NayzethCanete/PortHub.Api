@@ -189,8 +189,6 @@ namespace PortHub.Api.Controllers
             {
 
                 var airlineId = (int)HttpContext.Items["AirlineId"]!;
-
-
                 var canceled = _slotService.CancelSlot(id, airlineId);
                 return Ok(ToDto(canceled));
             }
