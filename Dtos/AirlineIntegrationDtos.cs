@@ -24,18 +24,9 @@ namespace PortHub.Api.Dtos
         [JsonPropertyName("FlightCode")]
         public string FlightCode { get; set; }
 
-        public ExternalTicketValidationRequest(string ticketNumber, string flightCode)
+        public ExternalTicketValidationRequest(int ticketNumber, string flightCode)
         {
-
-            //Intenta parsear el ticket como número, si no es posible lo deja como string, para evitar problemas de tipo en la API externa
-            if (long.TryParse(ticketNumber, out long number))
-            {
-                NumeroTicket = number;
-            }
-            else
-            {
-                NumeroTicket = ticketNumber;
-            }
+            NumeroTicket = ticketNumber;
             FlightCode = flightCode;
         }
     }
@@ -44,7 +35,7 @@ namespace PortHub.Api.Dtos
 
 
     public record TicketValidationRequest(
-        string TicketNumber,
+        int TicketNumber,
         string FlightCode);
 
     //es la rta que devuelve el back a quien lo solicito, luego de solicitar verificacion 

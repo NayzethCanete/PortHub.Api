@@ -73,7 +73,20 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // REGISTRO DE SERVICIOS Y HTTP CLIENTS
 // ==========================================================
 
-builder.Services.AddHttpClient(); 
+builder.Services.AddHttpClient<IAirlineIntegrationService, AirlineIntegrationService>((serviceProvider, client) =>
+{
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+    var baseUrl = config["AirlineApi:BaseUrl"];
+    var apiKey = config["AirlineApi:ApiKey"];
+
+    if (string.IsNullOrWhiteSpace(baseUrl))
+        throw new ArgumentException("Airline API BaseUrl no está configurada.");
+    if (string.IsNullOrWhiteSpace(apiKey))
+        throw new InvalidOperationException("AirlineApi:ApiKey no está configurada en el .env");
+
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+});
 builder.Services.AddScoped<IAirlineService, AirlineService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 builder.Services.AddScoped<IGateService, GateService>();

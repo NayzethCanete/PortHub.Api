@@ -55,7 +55,7 @@ namespace PortHub.Api.Services
 
                 // --- Validar Ticket con la API de la Aerolínea ---
                 var validationRequest = new TicketValidationRequest(
-                    request.TicketNumber.ToString(),
+                    request.TicketNumber,
                     request.FlightCode
                 );
 

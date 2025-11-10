@@ -45,10 +45,10 @@ namespace PortHub.Api.Services
 
             _httpClient.BaseAddress = new Uri(baseUrl);
 
-            if (!_httpClient.DefaultRequestHeaders.Contains("X-API-KEY"))
+            if (!_httpClient.DefaultRequestHeaders.Contains("X-API-Key"))
             {
-                _httpClient.DefaultRequestHeaders.Add("X-API-KEY", apiKey);
-            }
+                _httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+             }
         }
 
 
