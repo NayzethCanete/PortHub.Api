@@ -21,7 +21,7 @@ namespace PortHub.Api.Dtos
     );
 
     public record BoardingRegistrationRequest(
-        [Required] string TicketNumber,
+        [Required] int TicketNumber,
         [Required] string FlightCode
     );
 

@@ -67,7 +67,7 @@ namespace PortHub.Api.Services
             existing.GateId = slot.GateId;
             existing.FlightCode = slot.FlightCode;
             existing.Status = slot.Status ?? existing.Status;
-           
+        
             _context.SaveChanges();
             return existing;
         }

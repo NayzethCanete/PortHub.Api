@@ -22,16 +22,15 @@ namespace PortHub.Api.Services
             try
             {
                 // Buscar el SLOT ACTIVO para el FlightCode indicado.
-            
                 var activeSlot = await _context.Slots
-                    .Include(s => s.Gate) // Incluimos el Gate para saber su nombre después
+                    .Include(s => s.Gate) // Incluimos el Gate para acceder a su nombre luego
                     .AsNoTracking()
                     .FirstOrDefaultAsync(s =>
                         s.FlightCode == request.FlightCode &&
                         s.Status == "Confirmado" &&
                         s.ScheduleTime.Date == DateTime.UtcNow.Date);
 
-                // Validaciones del Slot
+                // --- Validaciones del Slot ---
                 if (activeSlot == null)
                 {
                     return new BoardingRegistrationResponse(
@@ -45,7 +44,6 @@ namespace PortHub.Api.Services
 
                 if (activeSlot.GateId == null || activeSlot.Gate == null)
                 {
-                    // Esto no debería pasar si el slot está "Confirmado", pero por seguridad lo validamos.
                     return new BoardingRegistrationResponse(
                         false,
                         $"El vuelo {request.FlightCode} está confirmado pero AÚN NO TIENE PUERTA asignada.",
@@ -55,8 +53,12 @@ namespace PortHub.Api.Services
                     );
                 }
 
-                // Validar Ticket con la API de la Aerolínea Externa
-                var validationRequest = new TicketValidationRequest(request.TicketNumber, request.FlightCode);
+                // --- Validar Ticket con la API de la Aerolínea ---
+                var validationRequest = new TicketValidationRequest(
+                    request.TicketNumber.ToString(),
+                    request.FlightCode
+                );
+
                 var validationResponse = await _airlineService.ValidateTicketAsync(validationRequest);
 
                 if (!validationResponse.IsValid)
@@ -65,19 +67,19 @@ namespace PortHub.Api.Services
                         false,
                         $"Aerolínea rechazó el embarque: {validationResponse.Message}",
                         DateTime.UtcNow,
-                        activeSlot.Gate.Name, // Ya sabemos la puerta correcta gracias al slot
+                        activeSlot.Gate.Name,
                         request.FlightCode
                     );
                 }
 
-                // valida que NO se haya embarcado previamente
+                // --- Verificar que el ticket no haya embarcado ya ---
                 bool alreadyBoarded = await _context.Boardings.AnyAsync(b =>
-                    b.TicketNumber == request.TicketNumber &&
+                    b.TicketNumber == request.TicketNumber.ToString() &&
                     b.SlotId == activeSlot.Id);
 
                 if (alreadyBoarded)
                 {
-                     return new BoardingRegistrationResponse(
+                    return new BoardingRegistrationResponse(
                         false,
                         $"Este ticket ya fue embarcado anteriormente para este vuelo.",
                         DateTime.UtcNow,
@@ -86,32 +88,34 @@ namespace PortHub.Api.Services
                     );
                 }
 
-                // Registrar el Embarque
+                // --- Registrar el embarque ---
                 var boarding = new Boarding
                 {
                     SlotId = activeSlot.Id,
-                    GateId = activeSlot.GateId.Value, 
-                    TicketNumber = request.TicketNumber,
+                    GateId = activeSlot.GateId.Value,
+                    TicketNumber = request.TicketNumber.ToString(),
                     FlightCode = request.FlightCode,
                     BoardingTime = DateTime.UtcNow,
                     Status = "Embarcado",
-                    PassengerName = "Pasajero Verificado",
+                    PassengerName = "Pasajero Verificado", // podría venir de la API externa
                     Seat = "N/A"
                 };
 
                 _context.Boardings.Add(boarding);
                 await _context.SaveChangesAsync();
 
+                // --- Respuesta final exitosa ---
                 return new BoardingRegistrationResponse(
                     true,
                     "Embarque registrado exitosamente.",
                     boarding.BoardingTime,
-                    activeSlot.Gate.Name, // Devolvemos el nombre de la puerta que el sistema asignó
+                    activeSlot.Gate.Name,
                     request.FlightCode
                 );
             }
             catch (Exception ex)
             {
+                // Manejo de errores controlado
                 return new BoardingRegistrationResponse(
                     false,
                     $"Error interno: {ex.Message}",
@@ -122,10 +126,11 @@ namespace PortHub.Api.Services
             }
         }
 
-
+        // --- Listado de embarques ---
         public async Task<IEnumerable<ResponseBoardingDto>> GetAllBoardingsAsync()
         {
             var boardings = await _context.Boardings.ToListAsync();
+
             return boardings.Select(b => new ResponseBoardingDto(
                 b.BoardingId,
                 b.FlightCode,
